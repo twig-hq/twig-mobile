@@ -1,0 +1,39 @@
+erDiagram
+  profiles ||--o{ user_integrations : connects
+  user_integrations ||--o| integration_tokens : "private schema"
+  user_integrations ||--o{ integration_auto_share : "auto-shares to"
+  relationships ||--o{ integration_auto_share : receives
+  user_integrations |o--o{ moments : creates
+  profiles ||--o{ export_jobs : requests
+  relationships |o--o{ export_jobs : "Archive export"
+  user_integrations {
+    uuid id PK
+    uuid user_id FK
+    text provider
+    text status
+    text share_mode
+    integer connection_version
+    timestamptz import_after
+    timestamptz next_sync_at
+  }
+  integration_tokens {
+    uuid integration_id PK, FK
+    bytea access_token_ciphertext
+    bytea refresh_token_ciphertext
+  }
+  integration_auto_share {
+    uuid integration_id PK, FK
+    uuid relationship_id PK, FK
+  }
+  export_jobs {
+    uuid id PK
+    uuid requested_by FK
+    text scope
+    uuid relationship_id FK
+    text status
+    timestamptz expires_at
+  }
+  storage_deletions {
+    text storage_path PK
+    timestamptz queued_at
+  }

@@ -1,0 +1,12 @@
+stateDiagram-v2
+  direction TB
+  state "Ended, history kept" as Kept
+  state "Ended, one person withdrew" as Withdrawn
+  [*] --> Active: invite accepted
+  Active --> Paused: either pauses
+  Paused --> Active: both agree
+  Active --> Kept: either ends
+  Active --> Withdrawn: end and withdraw
+  Kept --> Withdrawn: withdraw later
+  Kept --> Active: reopen,<br/>both agree
+  Withdrawn --> Active: rejoin, the one<br/>who stayed accepts

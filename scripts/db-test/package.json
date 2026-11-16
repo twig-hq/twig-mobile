@@ -1,0 +1,7 @@
+{
+  "name": "twig-db-test",
+  "private": true,
+  "description": "Runs Twig's migrations and pgTAP tests on plain local Postgres (no Docker).",
+  "scripts": { "test": "node run.cjs" },
+  "dependencies": { "pg": "^8.13.0" }
+}

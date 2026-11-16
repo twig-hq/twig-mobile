@@ -1,0 +1,13 @@
+stateDiagram-v2
+  direction TB
+  [*] --> Draft
+  Draft --> Published: publish
+  Published --> Unshared: unshare from a pair
+  Unshared --> Published: share again
+  Draft --> Trash: delete
+  Published --> Trash: delete
+  Trash --> Restored: restore within 30 days
+  Trash --> Deleted: after 30 days
+  state "Back where it was" as Restored
+  Restored --> [*]
+  Deleted --> [*]: its conversations go too

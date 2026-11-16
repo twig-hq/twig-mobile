@@ -1,0 +1,29 @@
+flowchart TB
+  UI["Phone: Expo app<br/>screens, drafts, voice recording,<br/>Apple Health summary built here"]
+  subgraph supa["Supabase"]
+    AUTH["Auth<br/>Apple or email code"]
+    API["Data API<br/>row-level security<br/>+ Postgres functions"]
+    ST[("Storage<br/>private media")]
+    DB[("Postgres<br/>26 tables")]
+    CRON["Cron"]
+  end
+  EF["Edge Functions: hold the secrets<br/>discover-generate · spotify-sync<br/>invite-accept · export-build"]
+  LLM["LLM provider"]
+  SPO["Spotify API"]
+  PH["PostHog<br/>IDs only"]
+  UI --> AUTH
+  UI -->|"reads and writes"| API
+  UI -->|"files"| ST
+  UI -.->|"events"| PH
+  API --> DB
+  UI -->|"invite code"| EF
+  CRON -->|"schedules"| EF
+  EF -->|"saves through RPCs"| API
+  EF <--> LLM
+  EF <--> SPO
+  classDef ext fill:#E7EEF7,stroke:#3B6EA8,color:#1F2D3D
+  classDef sec fill:#FBF3E4,stroke:#B7791F,color:#3D2E12
+  classDef phone fill:#2F5D50,stroke:#2F5D50,color:#FFFFFF
+  class LLM,SPO,PH ext
+  class EF sec
+  class UI phone

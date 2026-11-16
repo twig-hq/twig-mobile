@@ -1,0 +1,13 @@
+flowchart TB
+  A["Is the reader the author?"] -- "yes" --> T["Is it in their Trash?"]
+  A -- "no" --> S["Is there an unrevoked share into<br/>a relationship the reader is in?"]
+  S -- "yes" --> W["Is the relationship not withdrawn,<br/>and the Moment published<br/>and not in Trash?"]
+  T -- "no" --> Y(["Can read"])
+  W -- "yes" --> Y
+  S -- "no" --> N(["Cannot read"])
+  W -- "no" --> N
+  T -- "yes" --> N
+  classDef yes fill:#E8F0EC,stroke:#2F5D50,color:#1F2D29
+  classDef no fill:#F8E8E8,stroke:#B54848,color:#4A1F1F
+  class Y yes
+  class N no

@@ -1,0 +1,27 @@
+erDiagram
+  auth_users ||--o| profiles : "logs in as"
+  profiles ||--o{ contact_labels : "names someone"
+  profiles ||--o{ blocks : blocks
+  profiles ||--o| user_preferences : has
+  profiles {
+    uuid id PK
+    uuid auth_user_id FK
+    text display_name
+    text timezone
+    text state
+  }
+  contact_labels {
+    uuid owner_id PK, FK
+    uuid contact_id PK, FK
+    text label
+  }
+  blocks {
+    uuid blocker_id PK, FK
+    uuid blocked_id PK, FK
+  }
+  user_preferences {
+    uuid user_id PK, FK
+    text_array interests
+    smallint question_depth
+    text_array avoid_topics
+  }

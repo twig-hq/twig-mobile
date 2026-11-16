@@ -1,0 +1,33 @@
+erDiagram
+  profiles ||--o{ relationship_members : "is in"
+  relationships ||--|{ relationship_members : "has two"
+  profiles ||--o{ relationship_invites : sends
+  relationships |o--o{ relationship_invites : "created by"
+  relationship_members ||--o| relationship_preferences : has
+  relationships {
+    uuid id PK
+    text pair_key
+    text status
+    text ended_mode
+    text timezone
+  }
+  relationship_members {
+    uuid relationship_id PK, FK
+    uuid user_id PK, FK
+    text role
+    timestamptz withdrawn_at
+  }
+  relationship_invites {
+    uuid id PK
+    uuid created_by FK
+    text token_hash
+    text code_hash
+    timestamptz expires_at
+    uuid relationship_id FK
+  }
+  relationship_preferences {
+    uuid relationship_id PK, FK
+    uuid user_id PK, FK
+    text checkin_audience
+    boolean notifications_muted
+  }

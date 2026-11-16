@@ -1,0 +1,17 @@
+flowchart LR
+  M["Moment<br/>written once by Sam"]
+  MM["photos and voice note<br/>moment_media"]
+  S1["share: Sam and Mom"]
+  S2["share: Sam and Dad"]
+  T1["conversation with Mom<br/>messages and reactions"]
+  T2["conversation with Dad<br/>messages and reactions"]
+  X["unshare from Dad:<br/>revoked_at is set"]
+  H["Dad no longer sees the Moment<br/>or its conversation"]
+  M --- MM
+  M --> S1 --> T1
+  M --> S2 --> T2
+  S2 -.-> X -.-> H
+  classDef share fill:#FFFFFF,stroke:#2F5D50,color:#1F2D29
+  classDef no fill:#F8E8E8,stroke:#B54848,color:#4A1F1F
+  class S1,S2 share
+  class X,H no

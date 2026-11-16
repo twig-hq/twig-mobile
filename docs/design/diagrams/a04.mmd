@@ -1,0 +1,14 @@
+sequenceDiagram
+  autonumber
+  actor Sam as Sam (child)
+  participant T as Twig
+  actor Mom as Mom (parent)
+  Sam->>T: Invite: I'm the child, I call her "Mom"
+  T-->>Sam: Link and 8-character code, valid 7 days
+  Sam->>Mom: Text message with the link and code
+  Mom->>Mom: Installs Twig from the App Store
+  Mom->>T: Signs in and types the code
+  T->>T: Edge Function limits code guesses
+  T->>T: accept_invite() locks the invite,<br/>checks blocks and existing pairs
+  T-->>Mom: Relationship is active
+  T-->>Sam: Mom joined

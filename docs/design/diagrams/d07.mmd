@@ -1,0 +1,16 @@
+erDiagram
+  moment_shares ||--o{ saved_moments : "saved as"
+  relationship_members ||--o{ saved_moments : saves
+  relationship_members ||--o{ monthly_recap_views : opens
+  saved_moments {
+    uuid moment_id PK, FK
+    uuid relationship_id PK, FK
+    uuid saved_by PK, FK
+    timestamptz saved_at
+  }
+  monthly_recap_views {
+    uuid relationship_id PK, FK
+    uuid user_id PK, FK
+    date recap_month PK
+    timestamptz viewed_at
+  }
