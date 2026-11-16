@@ -12,9 +12,11 @@ Twig's backend is one Supabase project, "Twig" (us-east-1, Postgres 17, Free pla
 
 Rules:
 
+- GitHub Actions is the only thing that deploys to the project. Supabase's GitHub integration is connected to this repository (production branch `main`), but its **Deploy to production** and automatic preview branches stay off (dashboard: Project Settings → Integrations → GitHub). With Deploy to production on, every merge would be applied twice, once without waiting for the tests. Its **Supabase Preview** check on pull requests is skipped for that reason.
 - Never run `supabase db push` against the hosted project by hand; CI does it.
 - Never edit a migration that is already deployed. Fix forward with a new one.
-- Never put the service role key, secret API keys, the database password or access tokens in the repository, an issue, a pull request or Discord. GitHub's push protection blocks known key formats, but don't rely on it.
+- Never put secret API keys, the database password or access tokens in the repository, an issue, a pull request or Discord. GitHub's push protection blocks known key formats, but don't rely on it.
+- Check what a Supabase CLI command prints before running it anywhere the output is kept (CI logs, shared terminals, AI sessions). `supabase branches get` prints the project's API keys; use `supabase branches list` instead.
 
 ## Secrets and where they live
 
@@ -23,8 +25,9 @@ Rules:
 | `SUPABASE_ACCESS_TOKEN` | GitHub, `production` environment secret. A scoped Supabase access token (see "The deploy token" below). Only workflows on `main` can read it. |
 | `SUPABASE_PROJECT_REF` | GitHub, `production` environment variable. Not secret. |
 | Database password | A password manager. CI doesn't need it. |
-| Service role / secret API key | Edge Function secrets only (`npx supabase secrets set`), never in the app or the repository. |
-| Publishable (anon) key | The app's environment (`EXPO_PUBLIC_…`). Safe to ship: row-level security protects the data. |
+| Secret API key (`sb_secret_…`) | Edge Function secrets only (`npx supabase secrets set`), never in the app or the repository. |
+| Publishable key (`sb_publishable_…`) | The app's environment (`EXPO_PUBLIC_…`). Safe to ship: row-level security protects the data. |
+| Legacy `anon` and `service_role` keys | Disabled. Use the publishable and secret keys above. |
 
 ### The deploy token
 
@@ -57,4 +60,6 @@ If a token or key leaks: revoke it in the Supabase dashboard first, then create 
 | Sign in with Apple, Google | Off | On, after the Apple Developer account and Google client exist |
 | Database SSL enforcement | Off | On |
 | Network restrictions | Open | Stay open: CI deploys from GitHub's runners |
+| Legacy API keys (`anon`, `service_role`) | Disabled | Stay disabled |
+| GitHub integration | Connected, production branch `main`; Deploy to production off; preview branches off | Stay off: GitHub Actions deploys. Preview branches are billed per branch |
 | Backups | None on Free | Decide before the first beta invite: Pro, or our own scheduled backup |
