@@ -1,0 +1,15 @@
+sequenceDiagram
+  autonumber
+  participant App as Phone app
+  participant St as Storage
+  participant Fn as publish_moment()
+  App->>St: Upload photos to owner_id/media_id
+  App->>Fn: rpc(draft, chosen relationships)
+  activate Fn
+  Note over Fn: One transaction
+  Fn->>Fn: Check the author, files are ready,<br/>each relationship is active
+  Fn->>Fn: Mark published, add one share per relationship
+  Fn->>Fn: Open one conversation per share
+  Fn-->>App: Moment and its shares
+  deactivate Fn
+  App->>App: Refresh the Home feed cache

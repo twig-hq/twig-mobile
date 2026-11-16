@@ -1,0 +1,14 @@
+stateDiagram-v2
+  direction TB
+  [*] --> Private: Monday, new category
+  state "Each person, privately" as Private {
+    direction LR
+    Question --> Question: swap, up to 2 times
+    Question --> Draft: start answering
+    Draft --> Submitted: submit
+    Submitted --> Draft: edit
+  }
+  Private --> Revealed: both submitted
+  Private --> Closed: Sunday night,<br/>fewer than two answers
+  Revealed --> [*]: conversation opens,<br/>saved to the Archive
+  Closed --> [*]: nothing is revealed

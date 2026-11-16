@@ -1,0 +1,158 @@
+-- Shared setup for every test file, included with \ir right after `begin;`.
+-- Named .psql so `supabase test db` doesn't run it as a test on its own.
+-- Everything here is created inside the test's transaction and rolled back.
+
+create extension if not exists pgtap with schema extensions;
+create schema if not exists tests;
+grant usage on schema tests to public;
+
+-- A timezone where it is about noon right now, so quiet hours (21:00 to
+-- 08:00 by default) and reminder windows never make a test flaky.
+create or replace function tests.noon_tz() returns text language sql stable as $$
+  select case when o > 0 then 'Etc/GMT-' || o when o < 0 then 'Etc/GMT+' || (-o) else 'Etc/GMT' end
+    from (select 12 - extract(hour from now() at time zone 'UTC')::int as o) x
+$$;
+
+-- Named values that survive role switches (custom settings, local to the test).
+create or replace function tests.remember(p_name text, p_value uuid) returns void language sql as $$
+  select set_config('tests.' || p_name, p_value::text, true)
+$$;
+create or replace function tests.remember_text(p_name text, p_value text) returns void language sql as $$
+  select set_config('tests.' || p_name, p_value, true)
+$$;
+create or replace function tests.v(p_name text) returns uuid language sql stable as $$
+  select nullif(current_setting('tests.' || p_name, true), '')::uuid
+$$;
+create or replace function tests.t(p_name text) returns text language sql stable as $$
+  select current_setting('tests.' || p_name, true)
+$$;
+
+-- A signed-up person: an auth.users row, which creates their profile.
+create or replace function tests.new_user(p_name text, p_tz text default null)
+returns uuid language plpgsql security definer set search_path = '' as $$
+declare
+  v_auth uuid := gen_random_uuid();
+  v_id   uuid;
+begin
+  insert into auth.users (id, email, raw_user_meta_data)
+  values (v_auth, lower(p_name) || '.' || left(v_auth::text, 8) || '@example.test',
+          jsonb_build_object('display_name', p_name, 'timezone', coalesce(p_tz, tests.noon_tz())));
+  select id into v_id from public.profiles where auth_user_id = v_auth;
+  return v_id;
+end;
+$$;
+
+create or replace function tests.auth_id(p_profile uuid) returns uuid
+language sql stable security definer set search_path = '' as $$
+  select auth_user_id from public.profiles where id = p_profile
+$$;
+
+create or replace function tests.login(p_profile uuid) returns void language plpgsql as $$
+begin
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', tests.auth_id(p_profile), 'role', 'authenticated')::text, true);
+  perform set_config('role', 'authenticated', true);
+end;
+$$;
+
+create or replace function tests.as_service() returns void language plpgsql as $$
+begin
+  perform set_config('request.jwt.claims', '{"role":"service_role"}', true);
+  perform set_config('role', 'service_role', true);
+end;
+$$;
+
+create or replace function tests.as_anon() returns void language plpgsql as $$
+begin
+  perform set_config('request.jwt.claims', '{"role":"anon"}', true);
+  perform set_config('role', 'anon', true);
+end;
+$$;
+
+create or replace function tests.logout() returns void language plpgsql as $$
+begin
+  perform set_config('role', 'postgres', true);
+  perform set_config('request.jwt.claims', '', true);
+end;
+$$;
+
+-- Invite and accept by code. Returns the relationship id.
+create or replace function tests.pair(
+  p_inviter uuid, p_invitee uuid, p_inviter_role text default 'child',
+  p_invitee_label text default 'Mom', p_back_label text default null)
+returns uuid language plpgsql as $$
+declare
+  v_code text;
+  v_rel  uuid;
+begin
+  perform tests.login(p_inviter);
+  select code into v_code from public.create_invite(p_inviter_role, p_invitee_label);
+  perform tests.login(p_invitee);
+  v_rel := public.accept_invite(v_code, p_back_label);
+  perform tests.logout();
+  return v_rel;
+end;
+$$;
+
+-- A published post shared into the given pairs.
+create or replace function tests.post(p_author uuid, p_rels uuid[], p_body text default 'hello')
+returns uuid language plpgsql as $$
+declare
+  v_id uuid;
+begin
+  perform tests.login(p_author);
+  insert into public.moments (body) values (p_body) returning id into v_id;
+  perform public.publish_moment(v_id, p_rels);
+  perform tests.logout();
+  return v_id;
+end;
+$$;
+
+-- A file uploaded the way the app does it: register, upload, mark ready.
+create or replace function tests.upload(p_owner uuid, p_kind text default 'image')
+returns uuid language plpgsql as $$
+declare
+  v_id   uuid;
+  v_path text;
+begin
+  perform tests.login(p_owner);
+  insert into public.media (kind, mime_type)
+  values (p_kind, case p_kind when 'image' then 'image/jpeg' when 'audio' then 'audio/mp4' else 'video/mp4' end)
+  returning id, storage_path into v_id, v_path;
+  insert into storage.objects (bucket_id, name, owner) values ('media', v_path, tests.auth_id(p_owner));
+  update public.media set status = 'ready', bytes = 1000 where id = v_id;
+  perform tests.logout();
+  return v_id;
+end;
+$$;
+
+-- Queued pushes for one person and event (the outbox is service-only).
+create or replace function tests.outbox(p_recipient uuid, p_event text)
+returns integer language sql stable security definer set search_path = '' as $$
+  select count(*)::integer from public.notification_outbox
+   where recipient_id = p_recipient and event = p_event
+$$;
+
+-- A small question library: daily questions and every Discover category for
+-- parents, children and anyone, plus one "loss" question per category.
+create or replace function tests.seed_prompts() returns void language sql as $$
+  insert into public.prompt_library (surface, category, depth, audience_role, topic_tags, text)
+  select 'daily', 'mood', 1::smallint, null::text, '{}'::text[], 'How are you feeling today?'
+  union all select 'daily', 'everyday', 1, null, '{}', 'What made you smile today?'
+  union all select 'daily', 'everyday', 1, null, '{}', 'What did you eat for lunch?'
+  union all select 'daily', 'everyday', 1, null, '{health}', 'How did you sleep?'
+  union all select 'daily', 'everyday', 3, null, '{}', 'What are you worried about lately?'
+  union all
+  select 'discover', c, 1, r, '{}', format('%s question %s for %s', c, n, coalesce(r, 'anyone'))
+    from unnest(array['then_vs_now', 'person_never_knew', 'through_your_eyes',
+                      'family_stories', 'things_never_asked']) c,
+         unnest(array['parent', 'child', null]) r,
+         generate_series(1, 3) n
+  union all
+  select 'discover', c, 1, null, '{death}', format('%s question about loss', c)
+    from unnest(array['then_vs_now', 'person_never_knew', 'through_your_eyes',
+                      'family_stories', 'things_never_asked']) c
+$$;
+
+grant execute on all functions in schema tests to public;
+select tests.seed_prompts();

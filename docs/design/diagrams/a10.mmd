@@ -1,0 +1,12 @@
+flowchart TB
+  R["Account deletion requested<br/>14-day grace period, can cancel"] --> Q["For each relationship,<br/>the person chooses"]
+  Q -- "default" --> DEL["Delete what I shared"]
+  Q -- "their choice" --> KEEP["Leave our Archive:<br/>shared items stay,<br/>with only their name"]
+  DEL --> END["Private content deleted,<br/>login removed"]
+  KEEP --> END
+  classDef keep fill:#E8F0EC,stroke:#2F5D50,color:#1F2D29
+  classDef del fill:#F8E8E8,stroke:#B54848,color:#4A1F1F
+  class KEEP keep
+  class DEL del
+  classDef q fill:#FFFFFF,stroke:#2F5D50,color:#1F2D29
+  class Q q

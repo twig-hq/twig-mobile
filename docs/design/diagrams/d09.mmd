@@ -1,0 +1,34 @@
+erDiagram
+  profiles ||--o{ push_devices : "signs in on"
+  profiles ||--|| notification_settings : has
+  profiles ||--o{ notification_outbox : receives
+  relationships |o--o{ notification_outbox : about
+  push_devices {
+    uuid id PK
+    uuid user_id FK
+    text expo_token UK
+    text platform
+    timestamptz disabled_at
+  }
+  notification_settings {
+    uuid user_id PK, FK
+    boolean posts_replies
+    boolean discover
+    boolean connections
+    boolean reminder_enabled
+    time reminder_time
+    boolean quiet_enabled
+    time quiet_start
+    time quiet_end
+  }
+  notification_outbox {
+    bigint id PK
+    uuid recipient_id FK
+    uuid actor_id FK
+    uuid relationship_id FK
+    text category
+    text event
+    text dedupe_key UK
+    timestamptz deliver_after
+    text status
+  }

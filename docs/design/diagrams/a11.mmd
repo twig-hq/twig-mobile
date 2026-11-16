@@ -1,0 +1,12 @@
+flowchart TB
+  E["Something happens<br/>post, reply, reaction, Discover step,<br/>invite accepted, rejoin request"] --> Q
+  CR["Cron<br/>daily reminder every 15 min<br/>Discover closing hourly"] --> Q
+  Q["enqueue_notification() applies the rules<br/>1. Type switched on, pair not muted, recipient still in the pair; else nothing<br/>2. Quiet hours: hold until they end (reminders and closing nudges are dropped)<br/>3. This sender pushed in the last 10 min: hold as one follow-up"] --> OB[("notification_outbox")]
+  OB --> D["push-dispatch, every minute<br/>claim_notifications() merges due rows per recipient and sender"]
+  D --> EX["Expo Push API → APNs and FCM"]
+  EX --> L["Lock screen: who did what, never the content<br/>'Mom shared a check-in' · 'Mom shared 2 more Moments'"]
+  EX -. "DeviceNotRegistered" .-> T["disable_push_tokens()"]
+  classDef q fill:#FFFFFF,stroke:#2F5D50,color:#1F2D29
+  class Q q
+  classDef hub fill:#2F5D50,stroke:#2F5D50,color:#FFFFFF
+  class OB hub

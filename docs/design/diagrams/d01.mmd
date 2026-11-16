@@ -1,0 +1,26 @@
+flowchart TB
+  PEOPLE["People<br/>profiles<br/>contact_labels<br/>blocks<br/>user_preferences"]
+  PAIRS["Pairs<br/>relationships<br/>relationship_members<br/>relationship_invites<br/>relationship_preferences<br/>consent_events"]
+  CONTENT["Content<br/>moments<br/>moment_media<br/>media<br/>prompt_library"]
+  SHARES["Sharing<br/>moment_shares"]
+  DISC["Discover<br/>discovery_activities<br/>discovery_prompts<br/>discovery_responses"]
+  CONV["Conversations<br/>threads<br/>messages<br/>reactions<br/>thread_reads"]
+  ARCH["Archive<br/>saved_moments<br/>monthly_recap_views"]
+  CONN["Connectors<br/>user_integrations<br/>integration_auto_share<br/>private.integration_tokens"]
+  LIFE["Lifecycle<br/>export_jobs<br/>storage_deletions"]
+  NOTIF["Notifications<br/>push_devices<br/>notification_settings<br/>notification_outbox"]
+  PEOPLE -->|"two people join a pair"| PAIRS
+  PEOPLE -->|"writes"| CONTENT
+  CONTENT -->|"shared into"| SHARES
+  PAIRS -->|"receives"| SHARES
+  PAIRS -->|"one activity a week"| DISC
+  SHARES -->|"one conversation per share"| CONV
+  DISC -->|"one conversation per reveal"| CONV
+  SHARES -->|"saved"| ARCH
+  PEOPLE -->|"connects"| CONN
+  CONN -->|"creates"| CONTENT
+  PEOPLE -->|"requests"| LIFE
+  PEOPLE -->|"phones and settings"| NOTIF
+  SHARES -->|"notifies"| NOTIF
+  classDef hub fill:#2F5D50,stroke:#2F5D50,color:#FFFFFF
+  class SHARES,PAIRS hub

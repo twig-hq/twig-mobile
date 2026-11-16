@@ -1,0 +1,31 @@
+erDiagram
+  moment_shares ||--o| threads : "discussed in"
+  discovery_activities ||--o| threads : "discussed in"
+  threads ||--o{ messages : has
+  threads ||--o{ reactions : has
+  threads ||--o{ thread_reads : "read state"
+  relationship_members ||--o{ messages : writes
+  relationship_members ||--o{ reactions : adds
+  threads {
+    uuid id PK
+    uuid relationship_id FK
+    uuid moment_id FK
+    uuid discovery_activity_id FK
+  }
+  messages {
+    uuid id PK
+    uuid thread_id FK
+    uuid author_id FK
+    text body
+    timestamptz deleted_at
+  }
+  reactions {
+    uuid thread_id PK, FK
+    uuid user_id PK, FK
+    text reaction
+  }
+  thread_reads {
+    uuid thread_id PK, FK
+    uuid user_id PK, FK
+    timestamptz last_read_at
+  }

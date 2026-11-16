@@ -1,0 +1,13 @@
+flowchart TB
+  C["Monday: has either person<br/>consented to AI questions?"]
+  C -- "no" --> LIB["Prompt library,<br/>same filters"]
+  C -- "yes" --> PR["Build the prompt: context only from<br/>people who consented, both people's<br/>avoided topics, the lower depth"]
+  PR --> LLM["LLM writes the theme<br/>and two private questions"]
+  LLM --> V["Valid shape, length and topics?"]
+  V -- "no, after one retry" --> LIB
+  V -- "yes" --> SAVE["Saved through an RPC that<br/>rechecks consent and pair state"]
+  LIB --> SAVE
+  classDef ext fill:#E7EEF7,stroke:#3B6EA8,color:#1F2D3D
+  classDef q fill:#FFFFFF,stroke:#2F5D50,color:#1F2D29
+  class LLM ext
+  class C,V q

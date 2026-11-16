@@ -1,0 +1,25 @@
+erDiagram
+  relationships ||--o{ discovery_activities : "one per week"
+  discovery_activities ||--|{ discovery_prompts : "one per member"
+  relationship_members ||--o{ discovery_prompts : receives
+  discovery_prompts ||--o| discovery_responses : "answered by"
+  media |o--o{ discovery_responses : "voice answer"
+  discovery_activities {
+    uuid id PK
+    uuid relationship_id FK
+    date week_start
+    timestamptz closes_at
+    timestamptz revealed_at
+  }
+  discovery_prompts {
+    uuid activity_id PK, FK
+    uuid user_id PK, FK
+    smallint swap_count
+  }
+  discovery_responses {
+    uuid id PK
+    uuid activity_id FK
+    uuid user_id FK
+    uuid media_id FK
+    text status
+  }

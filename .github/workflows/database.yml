@@ -1,0 +1,63 @@
+name: Database
+
+# Runs every migration on a fresh local Supabase stack (the same images as the
+# hosted project, Postgres 17) and then the pgTAP suite in supabase/tests.
+#
+# It runs on every pull request so it can be a required check: when a pull
+# request touches nothing database-related, the job reports success without
+# starting Supabase.
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: database-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Migrations and pgTAP tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Did database files change?
+        id: changes
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          if [ "$EVENT" != "pull_request" ]; then
+            echo "db=true" >> "$GITHUB_OUTPUT"
+          elif git diff --name-only "origin/$BASE_REF...HEAD" \
+               | grep -qE '^(supabase/|\.github/workflows/database\.yml$)'; then
+            echo "db=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "db=false" >> "$GITHUB_OUTPUT"
+            echo "No database changes; skipping."
+          fi
+
+      - uses: supabase/setup-cli@v1
+        if: steps.changes.outputs.db == 'true'
+        with:
+          version: 3.1.0
+
+      - name: Start Supabase (applies every migration)
+        if: steps.changes.outputs.db == 'true'
+        run: supabase start
+
+      - name: Run pgTAP tests
+        if: steps.changes.outputs.db == 'true'
+        run: supabase test db
+
+      - name: Stop Supabase
+        if: always() && steps.changes.outputs.db == 'true'
+        run: supabase stop --no-backup

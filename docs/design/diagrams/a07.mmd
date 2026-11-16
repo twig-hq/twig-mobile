@@ -1,0 +1,14 @@
+flowchart TB
+  SF["Spotify: Cron runs spotify-sync<br/>several times a day"] --> IN["ingest_connector_event()"]
+  H["Apple Health: the phone builds<br/>the day's summary from HealthKit"] --> HS["submit_health_summary()"]
+  IN --> CK["Current connection version,<br/>after import_after, new event key?"]
+  HS --> CK
+  CK -- "no" --> DROP["Ignored"]
+  CK -- "yes" --> MODE["Sharing mode?"]
+  MODE -- "off" --> N["Nothing<br/>is created"]
+  MODE -- "review" --> D["Private draft,<br/>expires in 24 hours"]
+  MODE -- "auto" --> P["Published to the<br/>chosen pairs"]
+  classDef no fill:#F3F4F4,stroke:#8A9693,color:#3A4442
+  class DROP,N no
+  classDef q fill:#FFFFFF,stroke:#2F5D50,color:#1F2D29
+  class CK,MODE q

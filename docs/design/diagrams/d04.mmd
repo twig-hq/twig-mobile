@@ -1,0 +1,34 @@
+erDiagram
+  profiles ||--o{ moments : writes
+  profiles ||--o{ media : owns
+  moments ||--o{ moment_media : has
+  media ||--o{ moment_media : "used in"
+  moments ||--o{ moment_shares : "shared as"
+  relationships ||--o{ moment_shares : receives
+  prompt_library |o--o{ moments : "check-in prompt"
+  user_integrations |o--o{ moments : creates
+  moments {
+    uuid id PK
+    uuid author_id FK
+    text kind
+    text status
+    uuid prompt_id FK
+    uuid integration_id FK
+    timestamptz deleted_at
+  }
+  moment_media {
+    uuid moment_id PK, FK
+    uuid media_id PK, FK
+    smallint position
+  }
+  media {
+    uuid id PK
+    uuid owner_id FK
+    text storage_path
+  }
+  moment_shares {
+    uuid moment_id PK, FK
+    uuid relationship_id PK, FK
+    timestamptz first_shared_at
+    timestamptz revoked_at
+  }
