@@ -20,13 +20,30 @@ Rules:
 
 | What | Where |
 | --- | --- |
-| `SUPABASE_ACCESS_TOKEN` | GitHub, `production` environment secret. A scoped Supabase access token with `database_write`, `database_pooling_config_read` and `projects_read`. Only workflows on `main` can read it. |
+| `SUPABASE_ACCESS_TOKEN` | GitHub, `production` environment secret. A scoped Supabase access token (see "The deploy token" below). Only workflows on `main` can read it. |
 | `SUPABASE_PROJECT_REF` | GitHub, `production` environment variable. Not secret. |
 | Database password | A password manager. CI doesn't need it. |
 | Service role / secret API key | Edge Function secrets only (`npx supabase secrets set`), never in the app or the repository. |
 | Publishable (anon) key | The app's environment (`EXPO_PUBLIC_…`). Safe to ship: row-level security protects the data. |
 
-If a token or key leaks: revoke it in the Supabase dashboard first, then create a new one and update the secret with `gh secret set SUPABASE_ACCESS_TOKEN --env production -R twig-hq/twig-mobile`.
+### The deploy token
+
+Create it in the Supabase dashboard under Account → Access Tokens → Generate token, for the Twig project only if the page offers a choice. Give it only what `supabase db push` needs (`npx supabase db push --help` lists them under PERMISSIONS):
+
+| Permission on the token page | Set to | CLI scope |
+| --- | --- | --- |
+| Database | Read-write | `database_write` |
+| Connection Pooling | Read | `database_pooling_config_read` |
+| Projects (account-wide) | Read | `projects_read` |
+| Everything else | None | |
+
+Check the token with a dry run before storing it. From the repository root, this asks for the token without echoing it or saving it to shell history, and stores it in GitHub only if the dry run succeeds:
+
+```bash
+printf 'Paste the token: '; read -rs T; echo; SUPABASE_ACCESS_TOKEN="$T" npx --yes supabase@3.1.0 db push --remote="$(gh variable get SUPABASE_PROJECT_REF --env production -R twig-hq/twig-mobile)" --dry-run && printf %s "$T" | gh secret set SUPABASE_ACCESS_TOKEN --env production -R twig-hq/twig-mobile; unset T
+```
+
+If a token or key leaks: revoke it in the Supabase dashboard first, then create a new one and store it the same way.
 
 ## Project settings not yet managed from the repo
 
