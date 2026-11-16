@@ -7,7 +7,13 @@ supabase start
 supabase test db
 ```
 
-GitHub Actions does exactly that on every pull request that touches `supabase/` (see `.github/workflows/database.yml`), and also checks that `src/lib/database.types.ts` matches the schema.
+GitHub Actions does exactly that on every pull request that touches `supabase/` (see `.github/workflows/database.yml`), and `main` only accepts pull requests whose check passes.
+
+After a migration changes the schema, regenerate the app's types from the project and commit them with it:
+
+```bash
+npx supabase gen types typescript --remote --schema public > src/lib/database.types.ts
+```
 
 This folder runs the same migrations and pgTAP tests on a plain local Postgres (15 or newer, with pgTAP installed), with `supabase_stub.sql` standing in for Supabase's `auth`, `storage`, `vault` and `cron` schemas. It is for machines without Docker and for quick runs. It is not a substitute for testing against real Supabase before release.
 

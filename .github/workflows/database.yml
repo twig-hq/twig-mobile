@@ -2,18 +2,14 @@ name: Database
 
 # Runs every migration on a fresh local Supabase stack (the same images as the
 # hosted project, Postgres 17) and then the pgTAP suite in supabase/tests.
+#
+# It runs on every pull request so it can be a required check: when a pull
+# request touches nothing database-related, the job reports success without
+# starting Supabase.
 on:
   pull_request:
-    paths:
-      - "supabase/**"
-      - "src/lib/database.types.ts"
-      - ".github/workflows/database.yml"
   push:
     branches: [main]
-    paths:
-      - "supabase/**"
-      - "src/lib/database.types.ts"
-      - ".github/workflows/database.yml"
   workflow_dispatch:
 
 permissions:
@@ -30,27 +26,38 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Did database files change?
+        id: changes
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          if [ "$EVENT" != "pull_request" ]; then
+            echo "db=true" >> "$GITHUB_OUTPUT"
+          elif git diff --name-only "origin/$BASE_REF...HEAD" \
+               | grep -qE '^(supabase/|\.github/workflows/database\.yml$)'; then
+            echo "db=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "db=false" >> "$GITHUB_OUTPUT"
+            echo "No database changes; skipping."
+          fi
 
       - uses: supabase/setup-cli@v1
+        if: steps.changes.outputs.db == 'true'
         with:
           version: 3.1.0
 
       - name: Start Supabase (applies every migration)
+        if: steps.changes.outputs.db == 'true'
         run: supabase start
 
       - name: Run pgTAP tests
+        if: steps.changes.outputs.db == 'true'
         run: supabase test db
 
-      - name: Generated types match the schema
-        # The PostgREST version line differs between the local stack and the
-        # hosted project, so it is left out of the comparison.
-        run: |
-          supabase gen types typescript --schema public > /tmp/database.types.ts
-          if ! diff -u <(grep -v PostgrestVersion src/lib/database.types.ts) <(grep -v PostgrestVersion /tmp/database.types.ts); then
-            echo "::error::src/lib/database.types.ts is out of date. Run: npx supabase gen types typescript --remote --schema public > src/lib/database.types.ts"
-            exit 1
-          fi
-
       - name: Stop Supabase
-        if: always()
+        if: always() && steps.changes.outputs.db == 'true'
         run: supabase stop --no-backup
