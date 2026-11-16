@@ -6,6 +6,12 @@ name: Database
 # It runs on every pull request so it can be a required check: when a pull
 # request touches nothing database-related, the job reports success without
 # starting Supabase.
+#
+# On main, once the tests pass, the deploy job applies any new migrations to
+# the hosted project through the "production" environment, which only main can
+# use. It needs one secret there, SUPABASE_ACCESS_TOKEN: a scoped Supabase
+# access token with database_write, database_pooling_config_read and
+# projects_read. No database password is stored in GitHub.
 on:
   pull_request:
   push:
@@ -15,9 +21,11 @@ on:
 permissions:
   contents: read
 
+# Newer pushes cancel older runs on pull requests, never on main, so a deploy
+# is never cut off halfway.
 concurrency:
   group: database-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   test:
@@ -61,3 +69,36 @@ jobs:
       - name: Stop Supabase
         if: always() && steps.changes.outputs.db == 'true'
         run: supabase stop --no-backup
+
+  deploy:
+    name: Deploy migrations to Supabase
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+    concurrency:
+      group: supabase-production
+      cancel-in-progress: false
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 3.1.0
+
+      - name: Check the production settings are present
+        run: |
+          if [ -z "$SUPABASE_ACCESS_TOKEN" ] || [ -z "$PROJECT_REF" ]; then
+            echo "::error::Set SUPABASE_ACCESS_TOKEN (secret) and SUPABASE_PROJECT_REF (variable) on the production environment."
+            exit 1
+          fi
+
+      - name: Migrations that will be applied
+        run: supabase db push --remote="$PROJECT_REF" --dry-run
+
+      - name: Apply migrations
+        run: supabase db push --remote="$PROJECT_REF" --yes
