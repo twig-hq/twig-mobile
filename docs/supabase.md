@@ -1,6 +1,13 @@
 # Supabase
 
-Twig's backend is one Supabase project, "Twig" (us-east-1, Postgres 17, Free plan). This repository is the source of truth for its schema: every change goes through a pull request and is deployed by CI.
+Twig's backend is two Supabase projects in the Twig organization, both us-east-1, Postgres 17, Free plan. This repository is the source of truth for their schema: every change goes through a pull request and is deployed by CI, to both.
+
+| Project | GitHub environment | Used for |
+| --- | --- | --- |
+| **Twig** | `production` | Real families. Store builds of the app. |
+| **Twig Dev** | `dev` | Test data only. Development builds of the app, trying hosted settings (sign-in providers, email, deep links, push) before production, and a first run of every migration on a database that already has data in it. |
+
+Never copy real people's data into Twig Dev, and never point a development build at Twig. A free project pauses after about a week without activity; resume it from the dashboard.
 
 ## How a database change reaches the project
 
@@ -8,12 +15,12 @@ Twig's backend is one Supabase project, "Twig" (us-east-1, Postgres 17, Free pla
 2. Add or update pgTAP tests in `supabase/tests/` for every rule it changes.
 3. Regenerate the app's types: `npx supabase gen types typescript --remote --schema public > src/lib/database.types.ts`.
 4. Open a pull request. The **Migrations and pgTAP tests** check applies every migration to a fresh Supabase stack and runs the tests. `main` only accepts pull requests that pass it.
-5. Merge. On `main`, the **Deploy migrations to Supabase** job runs the tests again, then applies the new migrations to the project.
+5. Merge. On `main`, the tests run again, then **Deploy migrations to Twig Dev** applies the new migrations to Twig Dev and, only if that succeeds, **Deploy migrations to Twig (production)** applies them to Twig. If the dev deploy fails, fix forward with a new migration; production is untouched until dev passes.
 
 Rules:
 
-- GitHub Actions is the only thing that deploys to the project. Supabase's GitHub integration is connected to this repository (production branch `main`), but its **Deploy to production** and automatic preview branches stay off (dashboard: Project Settings → Integrations → GitHub). With Deploy to production on, every merge would be applied twice, once without waiting for the tests. Its **Supabase Preview** check on pull requests is skipped for that reason.
-- Never run `supabase db push` against the hosted project by hand; CI does it.
+- GitHub Actions is the only thing that deploys to either project. Supabase's GitHub integration is connected to this repository for Twig only (production branch `main`), but its **Deploy to production** and automatic preview branches stay off (dashboard: Project Settings → Integrations → GitHub). With Deploy to production on, every merge would be applied twice, once without waiting for the tests. Its **Supabase Preview** check on pull requests is skipped for that reason.
+- Never run `supabase db push` against either hosted project by hand; CI does it.
 - Never edit a migration that is already deployed. Fix forward with a new one.
 - Never put secret API keys, the database password or access tokens in the repository, an issue, a pull request or Discord. GitHub's push protection blocks known key formats, but don't rely on it.
 - Check what a Supabase CLI command prints before running it anywhere the output is kept (CI logs, shared terminals, AI sessions). `supabase branches get` prints the project's API keys; use `supabase branches list` instead.
@@ -22,16 +29,16 @@ Rules:
 
 | What | Where |
 | --- | --- |
-| `SUPABASE_ACCESS_TOKEN` | GitHub, `production` environment secret. A scoped Supabase access token (see "The deploy token" below). Only workflows on `main` can read it. |
-| `SUPABASE_PROJECT_REF` | GitHub, `production` environment variable. Not secret. |
-| Database password | A password manager. CI doesn't need it. |
-| Secret API key (`sb_secret_…`) | Edge Function secrets only (`npx supabase secrets set`), never in the app or the repository. |
-| Publishable key (`sb_publishable_…`) | The app's environment (`EXPO_PUBLIC_…`). Safe to ship: row-level security protects the data. |
+| `SUPABASE_ACCESS_TOKEN` | GitHub, one secret on each of the `dev` and `production` environments: a scoped Supabase access token for that environment's project (see "The deploy tokens" below). Only workflows on `main` can read them. |
+| `SUPABASE_PROJECT_REF` | GitHub, a variable on each of the `dev` and `production` environments. Not secret. |
+| Database passwords | A password manager, one per project. CI doesn't need them. |
+| Secret API keys (`sb_secret_…`) | Each project's Edge Function secrets only (`npx supabase secrets set`), never in the app or the repository. |
+| Publishable keys (`sb_publishable_…`) | The app's environment (`EXPO_PUBLIC_…`): Twig Dev's in development builds, Twig's in store builds. Safe to ship: row-level security protects the data. |
 | Legacy `anon` and `service_role` keys | Disabled. Use the publishable and secret keys above. |
 
-### The deploy token
+### The deploy tokens
 
-Create it in the Supabase dashboard under Account → Access Tokens → Generate token, for the Twig project only if the page offers a choice. Give it only what `supabase db push` needs (`npx supabase db push --help` lists them under PERMISSIONS):
+Each environment has its own token, limited to its own project, so a leaked dev token can't touch production. Create each in the Supabase dashboard under Account → Access Tokens → Generate token, choosing only that environment's project if the page offers a choice. Give it only what `supabase db push` needs (`npx supabase db push --help` lists them under PERMISSIONS):
 
 | Permission on the token page | Set to | CLI scope |
 | --- | --- | --- |
@@ -40,17 +47,19 @@ Create it in the Supabase dashboard under Account → Access Tokens → Generate
 | Projects (account-wide) | Read | `projects_read` |
 | Everything else | None | |
 
-Check the token with a dry run before storing it. From the repository root, this asks for the token without echoing it or saving it to shell history, and stores it in GitHub only if the dry run succeeds:
+Check a token with a dry run before storing it. From the repository root, set `E` to the environment (`dev` or `production`) and run this. It asks for the token without echoing it or saving it to shell history, and stores it in GitHub only if the dry run succeeds:
 
 ```bash
-printf 'Paste the token: '; read -rs T; echo; SUPABASE_ACCESS_TOKEN="$T" npx --yes supabase@3.1.0 db push --remote="$(gh variable get SUPABASE_PROJECT_REF --env production -R twig-hq/twig-mobile)" --dry-run && printf %s "$T" | gh secret set SUPABASE_ACCESS_TOKEN --env production -R twig-hq/twig-mobile; unset T
+E=dev; printf 'Paste the token: '; read -rs T; echo; SUPABASE_ACCESS_TOKEN="$T" npx --yes supabase@3.1.0 db push --remote="$(gh variable get SUPABASE_PROJECT_REF --env "$E" -R twig-hq/twig-mobile)" --dry-run && printf %s "$T" | gh secret set SUPABASE_ACCESS_TOKEN --env "$E" -R twig-hq/twig-mobile; unset T
 ```
 
 If a token or key leaks: revoke it in the Supabase dashboard first, then create a new one and store it the same way.
 
 ## Project settings not yet managed from the repo
 
-`supabase/config.toml` currently holds local-development values, so **don't run `supabase config push`** against the hosted project: it would overwrite hosted auth settings with local ones. Hosted settings are changed in the dashboard until the sign-in work is done, then moved into `config.toml` (with a `[remotes]` block for hosted values) and pushed deliberately. `npx supabase config diff` shows the differences without changing anything.
+`supabase/config.toml` currently holds local-development values, so **don't run `supabase config push`** against either hosted project: it would overwrite hosted auth settings with local ones. Hosted settings are changed in the dashboard, on Twig Dev first, until the sign-in work is done, then moved into `config.toml` (with a `[remotes]` block for hosted values) and pushed deliberately. `npx supabase config diff` shows the differences without changing anything.
+
+Twig (production):
 
 | Setting | Hosted now (November 16, 2026) | Planned |
 | --- | --- | --- |
@@ -63,3 +72,11 @@ If a token or key leaks: revoke it in the Supabase dashboard first, then create 
 | Legacy API keys (`anon`, `service_role`) | Disabled | Stay disabled |
 | GitHub integration | Connected, production branch `main`; Deploy to production off; preview branches off | Stay off: GitHub Actions deploys. Preview branches are billed per branch |
 | Backups | None on Free | Decide before the first beta invite: Pro, or our own scheduled backup |
+
+Twig Dev differs from the table above only where it says so here (November 23, 2026):
+
+| Setting | Twig Dev | Why |
+| --- | --- | --- |
+| GitHub integration | Not connected | GitHub Actions deploys |
+| Legacy API keys (`anon`, `service_role`) | Enabled; to be disabled, as on Twig | New projects start with them on; nothing uses them |
+| Backups | None, and none planned | Test data only |
