@@ -18,3 +18,19 @@ supabase/.branches/
 .DS_Store
 .idea/
 .vscode/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+.metro-health-check*
+*.tsbuildinfo
+*.jks
+*.mobileprovision
+npm-debug.*
+coverage/
+
+# Native folders are generated from app.json (Continuous Native Generation)
+/ios
+/android
