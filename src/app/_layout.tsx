@@ -3,6 +3,7 @@ import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 
+import { ToastProvider } from '@/components';
 import { fontFiles, useTheme } from '@/theme';
 
 // Keep the splash screen up until the fonts are ready, so the first screen
@@ -37,7 +38,9 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={navTheme}>
-      <Stack screenOptions={{ headerShown: false }} />
+      <ToastProvider>
+        <Stack screenOptions={{ headerShown: false }} />
+      </ToastProvider>
     </ThemeProvider>
   );
 }
