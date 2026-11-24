@@ -1,44 +1,116 @@
 import { Link } from 'expo-router';
-import { StyleSheet, View } from 'react-native';
+import { Animated, Image, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Button, Text } from '@/components';
-import { backendName } from '@/lib/env';
+import { Button, Icon, Text, useToast } from '@/components';
 import { useSession } from '@/session';
-import { useTheme } from '@/theme';
+import { ThemeScheme, useTheme } from '@/theme';
+import { AppleButton } from '@/welcome/AppleButton';
+import { DESIGN, TAGLINE } from '@/welcome/scene';
+import { useWelcomeTimeline, WelcomeScene, wordmark } from '@/welcome/WelcomeScene';
 
-// Placeholder for the welcome and sign-in screens (issue #26).
+// The first screen: the logo from the splash screen becomes the birds, then
+// the ways to sign in rise into place. Signing in itself arrives with issues
+// #26 (email code) and #27 (Apple); until then the buttons say so.
 export default function WelcomeScreen() {
-  const t = useTheme();
-  const { startPreview } = useSession();
+  // The picture is drawn in ink on cream, so this screen stays light in dark mode too.
   return (
-    <View
-      style={[styles.container, { backgroundColor: t.colors.background, gap: t.space.sm, padding: t.gutter }]}
-    >
-      <Text variant="display">Twig</Text>
-      <Text color="textMuted">Connected to {backendName()}</Text>
-      {__DEV__ && (
-        <View style={[styles.dev, { marginTop: t.space.xl, gap: t.space.xs }]}>
-          <Button
-            label="Look around the app"
-            onPress={startPreview}
-            accessibilityHint="Development only. Opens the signed-in app without an account."
-          />
-          {(['/dev/tokens', '/dev/components'] as const).map((href) => (
-            <Link key={href} href={href} asChild>
-              <Button
-                label={href === '/dev/tokens' ? 'Design tokens' : 'Components'}
-                variant="plain"
-                onPress={() => {}}
-              />
+    <ThemeScheme scheme="light">
+      <Welcome />
+    </ThemeScheme>
+  );
+}
+
+function Welcome() {
+  const t = useTheme();
+  const insets = useSafeAreaInsets();
+  const { width, height } = useWindowDimensions();
+  const { startPreview } = useSession();
+  const toast = useToast();
+  const timeline = useWelcomeTimeline();
+  const { tagline, buttons } = timeline.once;
+
+  const k = Math.min(width, 430) / DESIGN.width;
+  const sceneTop = (height - DESIGN.height * k) / 2;
+  const rise = (v: Animated.Value) => ({
+    opacity: v,
+    transform: [{ translateY: v.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }],
+  });
+  const soon = () => toast.show('Signing in is coming soon.');
+
+  return (
+    <View style={[styles.fill, { backgroundColor: t.colors.background }]}>
+      <WelcomeScene width={width} height={height} timeline={timeline} />
+
+      <Animated.View
+        accessible
+        accessibilityRole="header"
+        accessibilityLabel="Closer, twig by twig"
+        style={[
+          styles.tagline,
+          { top: sceneTop + TAGLINE.top * k, gap: t.space.xs + t.space.xxs },
+          rise(tagline),
+        ]}
+      >
+        <Text variant="title" style={{ fontFamily: t.text.caption.fontFamily }}>
+          Closer, twig by
+        </Text>
+        <Image source={wordmark} style={styles.word} />
+      </Animated.View>
+
+      <Animated.View
+        style={[
+          styles.buttons,
+          {
+            paddingHorizontal: t.gutter,
+            paddingBottom: Math.max(insets.bottom, t.space.xl),
+            gap: t.space.md,
+          },
+          rise(buttons),
+        ]}
+      >
+        <AppleButton onPress={soon} />
+        <Button
+          label="Continue with email"
+          variant="secondary"
+          icon={<Icon name="mail" size={t.size.iconSmall + t.space.xxs} strokeWidth={2} />}
+          onPress={soon}
+        />
+        <Text variant="footnote" color="textMuted" align="center">
+          You agree to our Terms and Privacy Policy.
+        </Text>
+        {__DEV__ && (
+          <View style={styles.dev}>
+            <Button
+              label="Look around"
+              variant="plain"
+              onPress={startPreview}
+              accessibilityHint="Development only. Opens the signed-in app without an account."
+            />
+            <Link href="/dev/components" asChild>
+              <Button label="Components" variant="plain" onPress={() => {}} />
             </Link>
-          ))}
-        </View>
-      )}
+            <Link href="/dev/tokens" asChild>
+              <Button label="Tokens" variant="plain" onPress={() => {}} />
+            </Link>
+          </View>
+        )}
+      </Animated.View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  dev: { alignSelf: 'stretch' },
+  fill: { flex: 1 },
+  tagline: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  word: { width: 62, height: 31, marginTop: 6 },
+  buttons: { position: 'absolute', left: 0, right: 0, bottom: 0 },
+  dev: { flexDirection: 'row', justifyContent: 'center' },
 });

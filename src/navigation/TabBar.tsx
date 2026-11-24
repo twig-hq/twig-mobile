@@ -1,14 +1,16 @@
 import { Tabs } from 'expo-router';
 import { useState, type ComponentProps } from 'react';
-import { Animated, Pressable, StyleSheet, View } from 'react-native';
+import { Animated, Image, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Ellipse, Path } from 'react-native-svg';
 
 import { Button, Icon, ListRow, Sheet, Text } from '@/components';
 import { usePressScale } from '@/components/motion';
-import { birdColors, useTheme } from '@/theme';
+import { useTheme } from '@/theme';
 
 import { TABS, type TabRoute } from './tabs';
+
+const tabPrint = require('../../assets/images/tab-print.png');
 
 type Props = Parameters<NonNullable<ComponentProps<typeof Tabs>['tabBar']>>[0];
 
@@ -77,8 +79,8 @@ export function TabBar({ state, emitter, navigateToTab }: Props) {
         style={[styles.tab, { minHeight: t.size.minTapTarget, gap: t.space.xxs }]}
       >
         <View style={styles.icon} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-          {/* A stand-in for the person's print under the active tab, until prints are drawn in the app. */}
-          {on && <View style={[styles.print, { backgroundColor: birdColors[0].color }]} />}
+          {/* A thumbprint under the open tab. It is gold for everyone until people have their own colour. */}
+          {on && <Image source={tabPrint} style={styles.print} />}
           <TabIcon
             route={route}
             color={on ? t.colors.text : t.colors.textSubtle}
@@ -158,7 +160,7 @@ const styles = StyleSheet.create({
   bar: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-around' },
   tab: { flex: 1, alignItems: 'center' },
   icon: { alignItems: 'center', justifyContent: 'center' },
-  print: { position: 'absolute', width: 26, height: 30, borderRadius: 13, opacity: 0.35 },
+  print: { position: 'absolute', width: 36, height: 36, opacity: 0.85 },
   share: { marginTop: -24 },
   shareButton: { alignItems: 'center', justifyContent: 'center' },
 });
