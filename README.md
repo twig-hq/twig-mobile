@@ -6,7 +6,8 @@ Twig is a mobile app for parents and their children: daily check-ins, shared mom
 
 | Path | What |
 | --- | --- |
-| `src/app/` | Screens, with [Expo Router](https://docs.expo.dev/router/introduction/): every file is a route. |
+| `src/app/` | Screens, with [Expo Router](https://docs.expo.dev/router/introduction/): every file is a route, so tests for screens live in `src/__tests__/`. |
+| `src/theme/` | Design tokens: colours for light and dark mode, the type scale (DM Sans), spacing, radii, shadows and motion. Read them with `useTheme()`. In development builds, the home screen links to a screen that shows them all. |
 | `src/lib/` | The Supabase client, the app's configuration and the generated database types. |
 | `supabase/` | Database migrations, pgTAP tests and local Supabase config. See [docs/supabase.md](docs/supabase.md). |
 | `docs/` | The Supabase runbook and the database design diagrams. |
@@ -35,7 +36,7 @@ Add packages with `npx expo install <package>`, which picks versions that match 
 | Command | What |
 | --- | --- |
 | `npm run typecheck` | TypeScript |
-| `npm run lint` | ESLint, with Expo's config |
+| `npm run lint` | ESLint, with Expo's config. It also rejects raw colours and font values in `src/` outside `src/theme/`. |
 | `npm test` | Unit tests (Jest, `jest-expo`) |
 | `npm run doctor` | Expo's project checks |
 
