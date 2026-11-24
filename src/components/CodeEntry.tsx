@@ -30,7 +30,7 @@ type Props = {
   onComplete?: (code: string) => void;
   /** What a screen reader calls the field, like "Invite code". */
   label: string;
-  /** 8 for invite codes; the email code length is still open (issue #41). */
+  /** 8 for invite codes, 6 for the emailed sign-in code. */
   length?: number;
   alphabet?: string;
   /** `error` outlines every box in the danger colour, `success` in the primary colour. */

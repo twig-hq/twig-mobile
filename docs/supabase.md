@@ -65,7 +65,7 @@ Twig (production):
 | --- | --- | --- |
 | Site URL, redirect URLs | `http://localhost:3000`, none | The app's URL scheme once the Expo app exists |
 | Email sign-in | Supabase's built-in sender: 2 emails an hour, team members only | Custom SMTP on a domain we own |
-| Email code length | 8 | Decide: 6 is easier for parents to type |
+| Email code length | 8 | 6, decided November 24, 2026 (see "Sign-in settings" below) |
 | Sign in with Apple, Google | Off | On, after the Apple Developer account and Google client exist |
 | Database SSL enforcement | Off | On |
 | Network restrictions | Open | Stay open: CI deploys from GitHub's runners |
@@ -80,3 +80,30 @@ Twig Dev differs from the table above only where it says so here (November 23, 2
 | GitHub integration | Not connected | GitHub Actions deploys |
 | Legacy API keys (`anon`, `service_role`) | Enabled; to be disabled, as on Twig | New projects start with them on; nothing uses them |
 | Backups | None, and none planned | Test data only |
+
+## Sign-in settings
+
+The app signs people in with a code sent by email (`src/auth/emailCode.ts`). Three numbers in that file must match the project, and the email must show the code. Set these in the dashboard, on Twig Dev first and on Twig once sign-in is proven there.
+
+| Where in the dashboard | Setting | Value | In the app |
+| --- | --- | --- | --- |
+| Authentication → Sign In / Providers → Email | Email OTP length | 6 | `CODE_LENGTH` |
+| Authentication → Sign In / Providers → Email | Email OTP expiration | 600 seconds | `EXPIRES_AFTER_S` |
+| Authentication → Rate Limits | Wait between codes to one address | 60 seconds (the default) | `RESEND_AFTER_S` |
+| Authentication → Emails → Templates → Magic Link | Message body | Shows `{{ .Token }}`, no link (below) | |
+| Authentication → Emails → Templates → Confirm signup | Message body | The same body. A new person's first email can use this template | |
+
+Until the length is 6, the emailed code has 8 digits and does not fit the app's six boxes.
+
+The email body for both templates:
+
+```html
+<h2>Your Twig code</h2>
+<p>Enter this code in the app to sign in:</p>
+<p style="font-size: 28px; letter-spacing: 4px;"><strong>{{ .Token }}</strong></p>
+<p>It works for 10 minutes. If you did not ask for it, you can ignore this email.</p>
+```
+
+Supabase's built-in sender allows 2 emails an hour and only to members of the Supabase organization, which is enough for development. Real users need our own sender (issue #37).
+
+The server gives the same answer for a wrong code and an expired one, so the app decides which to say from how long ago it sent the code.

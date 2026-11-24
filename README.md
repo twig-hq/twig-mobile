@@ -11,6 +11,7 @@ Twig is a mobile app for parents and their children: daily check-ins, shared mom
 | `src/components/` | Building blocks every screen uses: Button, TextField, CodeEntry, ChoiceRow, Chip, ScreenHeader, Card, ListRow, Sheet, Banner, toasts (`useToast()`), EmptyView, LoadingView, ErrorView, Avatar, Text and Icon. In development builds, the home screen links to a screen that shows each one in all its states. |
 | `src/navigation/` | The tab bar, the frame every tab shares and the list of tabs. |
 | `src/session/` | Who is signed in. Signed-out people only reach `src/app/(auth)/`; signed-in people only reach `src/app/(tabs)/` and Settings. In development builds, "Look around the app" on the welcome screen opens the signed-in app without an account. |
+| `src/auth/` | Signing in with a code sent by email: the rules, the calls to Supabase and the egg that hatches when the code is right. The screens are `src/app/(auth)/email.tsx` and `code.tsx`. The settings the project needs are in [docs/supabase.md](docs/supabase.md). |
 | `src/welcome/` | The welcome screen's animation: the logo's two prints hop onto a twig and become birds. `scene.ts` holds the positions and timings; the pictures are in `assets/images/welcome/`, exported from the design canvas. |
 | `src/dev/` | Helpers for the development-only screens. |
 | `src/lib/` | The Supabase client, the app's configuration and the generated database types. |
