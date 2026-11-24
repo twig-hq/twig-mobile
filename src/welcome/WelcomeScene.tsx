@@ -224,17 +224,26 @@ export function WelcomeScene({ width, height, timeline }: Props) {
         const jump = i === 0 ? once.jumpMom : once.jumpSam;
         const land = i === 0 ? once.landMom : once.landSam;
         const centre = { x: f.left + PRINT_CENTRE.x, y: f.top + PRINT_CENTRE.y };
+        // Laid out at the size it has in the logo and shrunk onto the twig, never
+        // enlarged: an image stretched beyond its laid-out size goes soft.
+        const big = f.from.scale;
+        const size = { width: BIRD_IMAGE.width * big * k, height: BIRD_IMAGE.height * big * k };
         const lerp = (from: number, to: number) =>
           fly.interpolate({ inputRange: [0, 1], outputRange: [from, to] });
         return (
           <Animated.View
             key={f.key}
             style={[
-              box({ ...f, ...BIRD_IMAGE }),
+              {
+                position: 'absolute',
+                left: (centre.x - PRINT_CENTRE.x * big) * k,
+                top: (centre.y - PRINT_CENTRE.y * big) * k,
+                ...size,
+              },
               // Sam's print overlaps Mom's in the logo, the way two inked prints would
               i === 1 && { mixBlendMode: 'multiply' },
               {
-                transformOrigin: [PRINT_CENTRE.x * k, PRINT_CENTRE.y * k, 0],
+                transformOrigin: [PRINT_CENTRE.x * big * k, PRINT_CENTRE.y * big * k, 0],
                 transform: [
                   { translateX: lerp((f.from.x - centre.x) * k, 0) },
                   {
@@ -243,7 +252,7 @@ export function WelcomeScene({ width, height, timeline }: Props) {
                       jump.interpolate({ inputRange: ARC_IN, outputRange: ARC_OUT.map((y) => y * k) }),
                     ),
                   },
-                  { scale: lerp(f.from.scale, 1) },
+                  { scale: lerp(1, 1 / big) },
                   {
                     rotate: fly.interpolate({
                       inputRange: [0, 1],
@@ -260,7 +269,7 @@ export function WelcomeScene({ width, height, timeline }: Props) {
               },
             ]}
           >
-            <Animated.View style={{ transform: [{ translateY: hop(loop, i) }] }}>
+            <Animated.View style={{ transform: [{ translateY: Animated.multiply(hop(loop, i), big * k) }] }}>
               <Animated.View
                 style={{
                   transformOrigin: `${FEET.x} ${FEET.y}`,
@@ -275,14 +284,14 @@ export function WelcomeScene({ width, height, timeline }: Props) {
                 <Animated.Image
                   source={img[f.key].print}
                   style={[
-                    bird,
+                    size,
                     { opacity: land.interpolate({ inputRange: [0, 0.99, 1], outputRange: [1, 1, 0] }) },
                   ]}
                 />
                 <Animated.Image
                   source={img[f.key].bird}
                   style={[
-                    bird,
+                    size,
                     styles.over,
                     { opacity: land.interpolate({ inputRange: [0, 0.7, 1], outputRange: [0, 1, 1] }) },
                   ]}
