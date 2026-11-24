@@ -43,7 +43,7 @@ describe('themeFor', () => {
 describe('text styles', () => {
   it('set a font family per weight and never fontWeight', () => {
     for (const style of Object.values(text)) {
-      expect(style.fontFamily).toMatch(/^DMSans_\d00\w+$/);
+      expect(style.fontFamily).toMatch(/^Figtree_\d00\w+$/);
       expect(style).not.toHaveProperty('fontWeight');
     }
   });
