@@ -4,9 +4,11 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import WelcomeScreen from '@/app/(auth)/index';
 import InviteLinkScreen from '@/app/invite/[code]';
+import { ToastProvider } from '@/components';
 import { TabBar } from '@/navigation/TabBar';
 import { greeting, TABS } from '@/navigation/tabs';
 import { SessionContext, statusFor, type SessionValue } from '@/session';
+import { BUBBLES, BUTTONS_AT, FLY, FLYERS, LOOP_AT, SCENE_LABEL, STAMPED } from '@/welcome/scene';
 
 const mockParams = jest.fn(() => ({}) as { code?: string });
 jest.mock('expo-router', () => ({
@@ -60,15 +62,43 @@ describe('greeting', () => {
 });
 
 describe('WelcomeScreen', () => {
-  it('shows which backend the build talks to and offers the development preview', async () => {
-    await render(
-      <Wrap>
+  const welcome = (
+    <Wrap>
+      <ToastProvider>
         <WelcomeScreen />
-      </Wrap>,
-    );
-    expect(screen.getByText('Connected to Twig Dev')).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: 'Look around the app' }));
+      </ToastProvider>
+    </Wrap>
+  );
+
+  it('describes the picture in one sentence and offers both ways to sign in', async () => {
+    await render(welcome);
+    expect(screen.getByRole('image', { name: SCENE_LABEL })).toBeTruthy();
+    expect(screen.getByRole('header', { name: 'Closer, twig by twig' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Continue with Apple' })).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Continue with email' }));
+    expect(screen.getByText('Signing in is coming soon.', { includeHiddenElements: true })).toBeTruthy();
+  });
+
+  it('offers the development preview', async () => {
+    await render(welcome);
+    await fireEvent.press(screen.getByRole('button', { name: 'Look around' }));
     expect(signedOut.startPreview).toHaveBeenCalled();
+  });
+});
+
+describe('the welcome animation plan', () => {
+  it('shows and hides every pop-up inside one loop, in order', () => {
+    for (const b of BUBBLES) {
+      expect(b.show).toBeGreaterThan(0);
+      expect(b.hide).toBeGreaterThan(b.show + 0.03);
+      expect(b.hide + 0.03).toBeLessThan(1);
+    }
+  });
+
+  it('lands both prints before the rest of the family is pressed on', () => {
+    const landed = Math.max(...FLYERS.map((f) => f.go + FLY));
+    expect(Math.min(...STAMPED.map((s) => s.at))).toBeGreaterThan(landed);
+    expect(LOOP_AT).toBeGreaterThan(BUTTONS_AT);
   });
 });
 

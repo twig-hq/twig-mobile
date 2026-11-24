@@ -15,6 +15,8 @@ export const palette = {
   oat: '#F2EBDD', // sunken areas
   pen: '#2A1C16', // the birds' pen lines
   slate: '#4A5D54', // secondary text
+  black: '#000000', // the Sign in with Apple button, as Apple asks
+  white: '#FFFFFF',
 } as const;
 
 // The colours a person can pick for their bird, in the order the picker shows
