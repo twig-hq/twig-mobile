@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import {
   ActivityIndicator,
+  Animated,
   Pressable,
   StyleSheet,
   View,
@@ -9,6 +10,7 @@ import {
 
 import { useTheme } from "@/theme";
 
+import { usePressScale } from "./motion";
 import { Text } from "./Text";
 
 export type ButtonVariant = "primary" | "secondary" | "destructive" | "plain";
@@ -53,48 +55,56 @@ export function Button({
   } as const;
   const { bg, fg } = look[variant];
   const plain = variant === "plain";
+  const press = usePressScale();
 
   return (
-    <Pressable
-      onPress={onPress}
-      disabled={inactive}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityHint={accessibilityHint}
-      accessibilityState={{ disabled: inactive, busy: loading }}
-      style={({ pressed }) => [
-        styles.base,
-        {
-          // minHeight, not height: the button grows with large text sizes
-          minHeight: plain ? t.size.minTapTarget : t.size.control,
-          paddingHorizontal: plain ? t.space.sm : t.space.xl,
-          paddingVertical: t.space.sm,
-          borderRadius: t.radius.pill,
-          backgroundColor: bg,
-          boxShadow:
-            variant === "primary" && !inactive ? t.elevation.button : undefined,
-          opacity: disabled ? 0.45 : pressed ? 0.8 : 1,
-        },
-        style,
-      ]}
-    >
-      <View
-        style={[styles.content, { gap: t.space.sm, opacity: loading ? 0 : 1 }]}
+    <Animated.View style={[press.style, style]}>
+      <Pressable
+        {...press.handlers}
+        onPress={onPress}
+        disabled={inactive}
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        accessibilityHint={accessibilityHint}
+        accessibilityState={{ disabled: inactive, busy: loading }}
+        style={({ pressed }) => [
+          styles.base,
+          {
+            // minHeight, not height: the button grows with large text sizes
+            minHeight: plain ? t.size.minTapTarget : t.size.control,
+            paddingHorizontal: plain ? t.space.sm : t.space.xl,
+            paddingVertical: t.space.sm,
+            borderRadius: t.radius.pill,
+            backgroundColor: bg,
+            boxShadow:
+              variant === "primary" && !inactive
+                ? t.elevation.button
+                : undefined,
+            opacity: disabled ? 0.45 : pressed ? 0.9 : 1,
+          },
+        ]}
       >
-        {icon}
-        <Text variant={plain ? "label" : "button"} color={fg} align="center">
-          {label}
-        </Text>
-      </View>
-      {loading && (
-        <ActivityIndicator
-          style={StyleSheet.absoluteFill}
-          color={t.colors[fg]}
-          accessibilityElementsHidden
-          importantForAccessibility="no-hide-descendants"
-        />
-      )}
-    </Pressable>
+        <View
+          style={[
+            styles.content,
+            { gap: t.space.sm, opacity: loading ? 0 : 1 },
+          ]}
+        >
+          {icon}
+          <Text variant={plain ? "label" : "button"} color={fg} align="center">
+            {label}
+          </Text>
+        </View>
+        {loading && (
+          <ActivityIndicator
+            style={StyleSheet.absoluteFill}
+            color={t.colors[fg]}
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+          />
+        )}
+      </Pressable>
+    </Animated.View>
   );
 }
 

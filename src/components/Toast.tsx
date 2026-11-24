@@ -8,13 +8,14 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { AccessibilityInfo, Animated, Platform, StyleSheet, View } from 'react-native';
+import { AccessibilityInfo, Animated, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useMotion, useTheme } from '@/theme';
 
 import type { Tone } from './Banner';
 import { Icon } from './Icon';
+import { NATIVE_DRIVER as NATIVE, SOFT } from './motion';
 import { Text } from './Text';
 
 type ToastApi = {
@@ -23,9 +24,6 @@ type ToastApi = {
 };
 
 const Ctx = createContext<ToastApi | null>(null);
-
-// the web has no native animation driver
-const NATIVE = Platform.OS !== 'web';
 
 /** How long a toast stays: long enough to read twice. */
 export const TOAST_MS = 4000;
@@ -55,12 +53,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     Animated.timing(opacity, {
       toValue: 1,
       duration: fade,
+      easing: SOFT,
       useNativeDriver: NATIVE,
     }).start();
     const timer = setTimeout(() => {
       Animated.timing(opacity, {
         toValue: 0,
         duration: fade,
+        easing: SOFT,
         useNativeDriver: NATIVE,
       }).start(() => setToast((now) => (now?.id === toast.id ? null : now)));
     }, TOAST_MS);
@@ -86,6 +86,15 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               styles.pill,
               {
                 opacity,
+                // rises a little as it fades in
+                transform: [
+                  {
+                    translateY: opacity.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [motion.reduceMotion ? 0 : 18, 0],
+                    }),
+                  },
+                ],
                 paddingVertical: t.space.md,
                 paddingHorizontal: t.space.lg + t.space.xs,
                 gap: t.space.sm,
