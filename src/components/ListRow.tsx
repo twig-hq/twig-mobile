@@ -23,7 +23,7 @@ type Props = {
 };
 
 /**
- * A row on a card-like surface: a person, a setting, a link to another screen.
+ * A soft filled row: a person, a setting, a link to another screen.
  * Screen readers hear it as one element: the title, then the subtitle.
  */
 export function ListRow({
@@ -84,8 +84,8 @@ export function ListRow({
       paddingVertical: t.space.md,
       paddingHorizontal: t.space.lg,
       gap: t.space.md,
-      borderRadius: t.radius.md,
-      backgroundColor: t.colors.surface,
+      borderRadius: t.radius.lg,
+      backgroundColor: t.colors.surfaceSunken,
       opacity: disabled ? 0.5 : 1,
     },
   ];

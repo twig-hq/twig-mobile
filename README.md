@@ -7,7 +7,7 @@ Twig is a mobile app for parents and their children: daily check-ins, shared mom
 | Path | What |
 | --- | --- |
 | `src/app/` | Screens, with [Expo Router](https://docs.expo.dev/router/introduction/): every file is a route, so tests for screens live in `src/__tests__/`. |
-| `src/theme/` | Design tokens: colours for light and dark mode, the type scale (DM Sans), spacing, radii, shadows and motion. Read them with `useTheme()`. In development builds, the home screen links to a screen that shows them all. |
+| `src/theme/` | Design tokens: colours for light and dark mode, the type scale (Figtree), spacing, radii, shadows and motion. Read them with `useTheme()`. In development builds, the home screen links to a screen that shows them all. |
 | `src/components/` | Building blocks every screen uses: Button, TextField, CodeEntry, ScreenHeader, Card, ListRow, Text and Icon. In development builds, the home screen links to a screen that shows each one in all its states. |
 | `src/dev/` | Helpers for the development-only screens. |
 | `src/lib/` | The Supabase client, the app's configuration and the generated database types. |

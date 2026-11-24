@@ -1,20 +1,26 @@
-import type { ReactNode } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
+import type { ReactNode } from "react";
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  View,
+  type ViewStyle,
+} from "react-native";
 
-import { useTheme } from '@/theme';
+import { useTheme } from "@/theme";
 
-import { Text } from './Text';
+import { Text } from "./Text";
 
-export type ButtonVariant = 'primary' | 'secondary' | 'destructive' | 'plain';
+export type ButtonVariant = "primary" | "secondary" | "destructive" | "plain";
 
 type Props = {
   label: string;
   onPress: () => void;
   /**
    * primary: filled, the one main action on a screen.
-   * secondary: outlined, a second choice.
+   * secondary: a soft fill, a second choice.
    * destructive: filled in the danger colour, for End, Block, Delete.
-   * plain: underlined text, for small actions like "Press again".
+   * plain: bold coloured text, for small actions like "Send the code again".
    */
   variant?: ButtonVariant;
   /** Shows a spinner, keeps the button's size and ignores presses. */
@@ -30,7 +36,7 @@ type Props = {
 export function Button({
   label,
   onPress,
-  variant = 'primary',
+  variant = "primary",
   loading = false,
   disabled = false,
   icon,
@@ -40,13 +46,13 @@ export function Button({
   const t = useTheme();
   const inactive = disabled || loading;
   const look = {
-    primary: { bg: t.colors.primary, fg: 'onPrimary', border: t.colors.primary },
-    secondary: { bg: 'transparent', fg: 'text', border: t.colors.primary },
-    destructive: { bg: t.colors.danger, fg: 'onDanger', border: t.colors.danger },
-    plain: { bg: 'transparent', fg: 'text', border: 'transparent' },
+    primary: { bg: t.colors.primary, fg: "onPrimary" },
+    secondary: { bg: t.colors.surfaceSunken, fg: "text" },
+    destructive: { bg: t.colors.danger, fg: "onDanger" },
+    plain: { bg: "transparent", fg: "link" },
   } as const;
-  const { bg, fg, border } = look[variant];
-  const plain = variant === 'plain';
+  const { bg, fg } = look[variant];
+  const plain = variant === "plain";
 
   return (
     <Pressable
@@ -65,21 +71,18 @@ export function Button({
           paddingVertical: t.space.sm,
           borderRadius: t.radius.pill,
           backgroundColor: bg,
-          borderColor: border,
-          borderWidth: plain ? 0 : 1.5,
+          boxShadow:
+            variant === "primary" && !inactive ? t.elevation.button : undefined,
           opacity: disabled ? 0.45 : pressed ? 0.8 : 1,
         },
         style,
       ]}
     >
-      <View style={[styles.content, { gap: t.space.sm, opacity: loading ? 0 : 1 }]}>
+      <View
+        style={[styles.content, { gap: t.space.sm, opacity: loading ? 0 : 1 }]}
+      >
         {icon}
-        <Text
-          variant="button"
-          color={fg}
-          align="center"
-          style={plain ? styles.underline : undefined}
-        >
+        <Text variant={plain ? "label" : "button"} color={fg} align="center">
           {label}
         </Text>
       </View>
@@ -96,7 +99,11 @@ export function Button({
 }
 
 const styles = StyleSheet.create({
-  base: { alignItems: 'center', justifyContent: 'center' },
-  content: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', flexShrink: 1 },
-  underline: { textDecorationLine: 'underline' },
+  base: { alignItems: "center", justifyContent: "center" },
+  content: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 1,
+  },
 });

@@ -21,6 +21,8 @@ export type ColorTokens = {
   onPrimary: string;
   /** Small accents that are not text: the caret, the active tab's mark. */
   accent: string;
+  /** Text of small text-only actions, like "Send the code again". */
+  link: string;
   /** Destructive actions and errors, as text or as a fill. */
   danger: string;
   /** Text and icons on `danger`. */
@@ -47,6 +49,7 @@ export const lightColors: ColorTokens = {
   primary: palette.forest,
   onPrimary: palette.cream,
   accent: palette.orange,
+  link: '#AD4522',
   danger: '#B4441F',
   onDanger: palette.paper,
   border: 'rgba(31, 69, 53, 0.14)',
@@ -68,6 +71,7 @@ export const darkColors: ColorTokens = {
   primary: palette.cream,
   onPrimary: palette.forest,
   accent: '#E8774F',
+  link: '#F2A283',
   danger: '#F08A6A',
   onDanger: '#13221B',
   border: 'rgba(247, 241, 230, 0.14)',
