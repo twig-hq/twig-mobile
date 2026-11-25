@@ -15,6 +15,7 @@ Twig is a mobile app for parents and their children: daily check-ins, shared mom
 | `src/welcome/` | The welcome screen's animation: the logo's two prints hop onto a twig and become birds. `scene.ts` holds the positions and timings; the pictures are in `assets/images/welcome/`, exported from the design canvas. |
 | `src/dev/` | Helpers for the development-only screens. |
 | `src/lib/` | The Supabase client, the app's configuration and the generated database types. |
+| `emails/` | The two sign-in emails (a welcome for new people, a short one for people coming back), their pictures, and `build.mjs`, which previews them or makes them ready to paste into Supabase. See "Sign-in settings" in [docs/supabase.md](docs/supabase.md). |
 | `supabase/` | Database migrations, pgTAP tests and local Supabase config. See [docs/supabase.md](docs/supabase.md). |
 | `docs/` | The Supabase runbook and the database design diagrams. |
 | `scripts/db-test/` | Runs the database tests without Docker. |

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light only" />
+    <meta name="supported-color-schemes" content="light only" />
+    <title>%TITLE%</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap" />
+    <style>
+      :root { color-scheme: light only; }
+      body { margin: 0; padding: 0; background: #F7F1E6; }
+      img { border: 0; display: block; }
+      @media (max-width: 480px) {
+        .pad { padding-left: 22px !important; padding-right: 22px !important; }
+        .code { font-size: 34px !important; letter-spacing: 6px !important; }
+      }
+    </style>
+  </head>
+  <body style="margin: 0; padding: 0; background: #F7F1E6;">
+    <!-- what the inbox shows next to the subject -->
+    <div style="display: none; max-height: 0; overflow: hidden; opacity: 0; color: #F7F1E6;">%PREHEADER%</div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background: #F7F1E6;">
+      <tr>
+        <td align="center" style="padding: 28px 14px 36px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width: 520px;">
+            <tr>
+              <td align="center" style="padding: 0 0 20px;">
+                <img src="%IMAGES%/lockup.png" width="124" height="48" alt="Twig" style="width: 124px; height: 48px;" />
+              </td>
+            </tr>
+            <tr>
+              <td style="background: #FFFDF8; border-radius: 28px; overflow: hidden; font-family: 'Figtree', -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1F4535;">
+%BODY%
+              </td>
+            </tr>
+            <tr>
+              <td class="pad" align="center" style="padding: 22px 30px 0; font-family: 'Figtree', -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; line-height: 19px; color: #4A5D54;">
+                You got this because someone typed {{ .Email }} into the Twig app. If that wasn't you, ignore this email and nothing happens.
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

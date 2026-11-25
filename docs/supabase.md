@@ -90,12 +90,20 @@ The app signs people in with a code sent by email (`src/auth/emailCode.ts`). Thr
 | Authentication → Sign In / Providers → Email | Email OTP length | 6 | `CODE_LENGTH` |
 | Authentication → Sign In / Providers → Email | Email OTP expiration | 600 seconds | `EXPIRES_AFTER_S` |
 | Authentication → Rate Limits | Wait between codes to one address | 60 seconds (the default) | `RESEND_AFTER_S` |
-| Authentication → Emails → Templates → Magic Link | Message body | Shows `{{ .Token }}`, no link (below) | |
-| Authentication → Emails → Templates → Confirm signup | Message body | The same body. A new person's first email can use this template | |
+| Authentication → Emails → Templates → Magic Link | Subject and message body | The `sign-in` email (below) | |
+| Authentication → Emails → Templates → Confirm signup | Subject and message body | The `welcome` email (below). A new person's first email uses this template | |
 
 Until the length is 6, the emailed code has 8 digits and does not fit the app's six boxes.
 
-The email body for both templates:
+### The emails
+
+The two emails are designed in `emails/` (see the README's table). `welcome` is for a new person and goes in the **Confirm signup** template; `sign-in` is for someone coming back and goes in **Magic Link**. Each file starts with the subject line to paste into the dashboard.
+
+- Keep **Confirm email** switched on (Authentication → Sign In / Providers → Email). With it off, new people get the Magic Link email and never see the welcome.
+- Email apps only show pictures that are on the public web. Upload `emails/images/` somewhere public, then run `node emails/build.mjs <address of that folder>` and paste each file from `emails/out/` into its template. Where to host the pictures is not decided yet.
+- `node emails/build.mjs` with no address builds a preview with a sample code, to open in a browser.
+
+Until the pictures are hosted, this plain body works for both templates:
 
 ```html
 <h2>Your Twig code</h2>
