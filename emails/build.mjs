@@ -24,6 +24,8 @@ for (const name of ['welcome', 'sign-in']) {
   let html = frame
     .replace('%TITLE%', note('subject'))
     .replace('%PREHEADER%', note('preheader'))
+    .replace('%GREETING%', note('greeting'))
+    .replace('%CLOSING%', note('closing'))
     .replace('%BODY%', body)
     .replaceAll('%IMAGES%', preview ? '../images' : images);
   if (preview) html = html.replaceAll('{{ .Token }}', '482916').replaceAll('{{ .Email }}', 'sam@example.com');
