@@ -120,6 +120,8 @@ If the pictures are ever unavailable, this plain body works for both templates:
 <p>It works for 10 minutes. If you did not ask for it, you can ignore this email.</p>
 ```
 
-Supabase's built-in sender allows 2 emails an hour and only to members of the Supabase organization, which is enough for development. Real users need our own sender (issue #37).
+**The emails need our own sender first.** On the Free plan the dashboard locks the templates ("Set up custom SMTP to edit templates") and Supabase's built-in sender sends its default email, which has a sign-in link and no code. So code sign-in cannot work, even for development, until custom SMTP is set up (Authentication → Emails → SMTP Settings, issue #37) or the project is on Pro. The built-in sender is also limited to 2 emails an hour, to members of the Supabase organization.
+
+State of Twig Dev on November 26, 2026: code length 6 and expiry 600 seconds are set; custom SMTP is off, so the templates are still the defaults.
 
 The server gives the same answer for a wrong code and an expired one, so the app decides which to say from how long ago it sent the code.
