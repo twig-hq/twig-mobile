@@ -100,10 +100,18 @@ Until the length is 6, the emailed code has 8 digits and does not fit the app's 
 The two emails are designed in `emails/` (see the README's table). `welcome` is for a new person and goes in the **Confirm signup** template; `sign-in` is for someone coming back and goes in **Magic Link**. Each file starts with the subject line to paste into the dashboard.
 
 - Keep **Confirm email** switched on (Authentication → Sign In / Providers → Email). With it off, new people get the Magic Link email and never see the welcome.
-- Email apps only show pictures that are on the public web. Upload `emails/images/` somewhere public, then run `node emails/build.mjs <address of that folder>` and paste each file from `emails/out/` into its template. Where to host the pictures is not decided yet.
+- Email apps only show pictures that are on the public web, so each project has a public storage bucket called `email` (created by a migration). The pictures in `emails/images/` go in a version folder inside it, `v1` for now. Uploading needs the dashboard (Storage → email) or a secret key; the app's own key cannot write there.
+- Build the ready-to-paste emails with the bucket's address, then paste each file from `emails/out/` into its template:
+
+  ```bash
+  node emails/build.mjs https://<project ref>.supabase.co/storage/v1/object/public/email/v1
+  ```
+
+- Pictures are cached for a year. If one changes, upload the set to a new folder (`v2`) and rebuild with that address.
+- Twig Dev has the bucket and the `v1` pictures (November 26, 2026). Twig gets the empty bucket when the migration deploys; its pictures still need uploading.
 - `node emails/build.mjs` with no address builds a preview with a sample code, to open in a browser.
 
-Until the pictures are hosted, this plain body works for both templates:
+If the pictures are ever unavailable, this plain body works for both templates:
 
 ```html
 <h2>Your Twig code</h2>
