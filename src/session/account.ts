@@ -1,0 +1,67 @@
+import { deviceTimeZone } from '@/auth/emailCode';
+import { supabase } from '@/lib/supabase';
+
+// What the app needs to know about the signed-in person before it can show
+// the right screen: their profile, and whether they have finished onboarding.
+
+export type Account = {
+  profileId: string;
+  displayName: string;
+  timeZone: string;
+  /** Onboarding is finished, or was skipped, once user_preferences.completed_at is set. */
+  onboarded: boolean;
+};
+
+export async function loadAccount(authUserId: string): Promise<Account> {
+  const { data: profile, error } = await supabase
+    .from('profiles')
+    .select('id, display_name, timezone')
+    .eq('auth_user_id', authUserId)
+    .maybeSingle();
+  if (error) throw error;
+  if (!profile) throw new Error('This login has no active profile');
+  const { data: prefs, error: prefsError } = await supabase
+    .from('user_preferences')
+    .select('completed_at')
+    .eq('user_id', profile.id)
+    .maybeSingle();
+  if (prefsError) throw prefsError;
+  return {
+    profileId: profile.id,
+    displayName: profile.display_name,
+    timeZone: profile.timezone,
+    onboarded: Boolean(prefs?.completed_at),
+  };
+}
+
+/** The time zone to save, if the phone has moved to a different one. */
+export function timeZoneToSave(stored: string, device: string): string | null {
+  return device && device !== stored ? device : null;
+}
+
+/**
+ * Keeps the profile in the phone's time zone, checked each time the app
+ * starts. Returns the zone it saved, or null. A zone the database does not
+ * recognise is left alone.
+ */
+export async function refreshTimeZone(account: Account, device = deviceTimeZone()): Promise<string | null> {
+  const next = timeZoneToSave(account.timeZone, device);
+  if (!next) return null;
+  const { error } = await supabase.from('profiles').update({ timezone: next }).eq('id', account.profileId);
+  return error ? null : next;
+}
+
+/** Marks onboarding finished (or, in development, not finished, to see it again). */
+export async function setOnboarded(profileId: string, done: boolean): Promise<void> {
+  const completed_at = done ? new Date().toISOString() : null;
+  const { data, error } = await supabase
+    .from('user_preferences')
+    .update({ completed_at })
+    .eq('user_id', profileId)
+    .select('user_id');
+  if (error) throw error;
+  if (data.length > 0) return;
+  // no preferences yet: the row starts here (user_id defaults to the caller)
+  const { error: insertError } = await supabase.from('user_preferences').insert({ completed_at });
+  if (insertError) throw insertError;
+}
