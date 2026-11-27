@@ -10,6 +10,7 @@ Twig is a mobile app for parents and their children: daily check-ins, shared mom
 | `src/theme/` | Design tokens: colours for light and dark mode, the type scale (Figtree), spacing, radii, shadows and motion. Read them with `useTheme()`. In development builds, the home screen links to a screen that shows them all. |
 | `src/components/` | Building blocks every screen uses: Button, TextField, CodeEntry, ChoiceRow, Chip, ScreenHeader, Card, ListRow, Sheet, Banner, toasts (`useToast()`), EmptyView, LoadingView, ErrorView, Avatar, Text and Icon. In development builds, the home screen links to a screen that shows each one in all its states. |
 | `src/navigation/` | The tab bar, the frame every tab shares and the list of tabs. |
+| `src/birds/` | Everyone's thumbprint bird, drawn live with [Skia](https://shopify.github.io/react-native-skia/): a seeded print, the canvas's ink texture, and the pen-drawn face and extra. A profile keeps its bird in `bird_seed`, `bird_color` and `bird_extra`. In development builds, Settings links to a screen with every colour and extra. |
 | `src/session/` | Who is signed in, and where they may go: signed-out people only reach `src/app/(auth)/`, people who have not finished onboarding only reach `src/app/(onboarding)/`, and everyone else reaches `src/app/(tabs)/` and Settings (`statusFor`). The session is stored encrypted on the phone (`src/lib/encryptedStorage.ts`, key in the keychain). In development builds, "Look around" on the welcome screen opens the signed-in app without an account. |
 | `src/auth/` | Signing in with a code sent by email: the rules, the calls to Supabase and the egg that hatches when the code is right. The screens are `src/app/(auth)/email.tsx` and `code.tsx`. The settings the project needs are in [docs/supabase.md](docs/supabase.md). |
 | `src/welcome/` | The welcome screen's animation: the logo's two prints hop onto a twig and become birds. `scene.ts` holds the positions and timings; the pictures are in `assets/images/welcome/`, exported from the design canvas. |
@@ -33,6 +34,8 @@ npm start
 ```
 
 `.env.example` points development builds at **Twig Dev**, the Supabase project with test data only. Never point a development build at **Twig**, which holds real families' data. Store builds get Twig's values from the build service, not from a file.
+
+In a browser, `npm run web` first copies Skia's WebAssembly file to `public/` (it is not committed), then starts the browser build.
 
 Open the app with Expo Go, or in the iOS Simulator (needs Xcode) or Android emulator from the menu that `npm start` shows. Libraries with their own native code will later need a development build (`npx expo run:ios`, or `eas build --profile development`).
 

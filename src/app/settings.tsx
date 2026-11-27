@@ -40,6 +40,7 @@ export default function SettingsScreen() {
         {account && <ListRow title="Time zone" subtitle={account.timeZone} />}
         {__DEV__ && <ListRow title="Components" onPress={() => router.push('/dev/components')} />}
         {__DEV__ && <ListRow title="Design tokens" onPress={() => router.push('/dev/tokens')} />}
+        {__DEV__ && <ListRow title="Birds" onPress={() => router.push('/dev/birds')} />}
         {__DEV__ && account && (
           <ListRow
             title="Show onboarding again"

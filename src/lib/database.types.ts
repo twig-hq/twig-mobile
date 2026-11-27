@@ -818,8 +818,12 @@ export type Database = {
         Row: {
           auth_user_id: string | null
           avatar_media_id: string | null
+          bird_color: string | null
+          bird_extra: string
+          bird_seed: number
           created_at: string
           display_name: string
+          family_role: string | null
           id: string
           locale: string
           state: string
@@ -830,8 +834,12 @@ export type Database = {
         Insert: {
           auth_user_id?: string | null
           avatar_media_id?: string | null
+          bird_color?: string | null
+          bird_extra?: string
+          bird_seed?: number
           created_at?: string
           display_name: string
+          family_role?: string | null
           id?: string
           locale?: string
           state?: string
@@ -842,8 +850,12 @@ export type Database = {
         Update: {
           auth_user_id?: string | null
           avatar_media_id?: string | null
+          bird_color?: string | null
+          bird_extra?: string
+          bird_seed?: number
           created_at?: string
           display_name?: string
+          family_role?: string | null
           id?: string
           locale?: string
           state?: string

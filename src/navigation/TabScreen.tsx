@@ -3,8 +3,13 @@ import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Avatar, EmptyView, Text } from '@/components';
-import { birdColors, useTheme } from '@/theme';
+import { Bird, birdColor, SAMPLE_BIRD } from '@/birds';
+import { EmptyView, Text } from '@/components';
+import { useSession } from '@/session';
+import { useTheme } from '@/theme';
+
+/** The Settings button's size. */
+const ME = 48;
 
 type Props = {
   title: string;
@@ -15,6 +20,7 @@ type Props = {
 export function TabScreen({ title, children }: Props) {
   const t = useTheme();
   const insets = useSafeAreaInsets();
+  const look = useSession().account?.bird ?? SAMPLE_BIRD;
   return (
     <View style={[styles.fill, { backgroundColor: t.colors.background }]}>
       <View
@@ -31,15 +37,27 @@ export function TabScreen({ title, children }: Props) {
         <Text variant="display" accessibilityRole="header" style={styles.fill}>
           {title}
         </Text>
-        {/* The person's bird goes here once birds are drawn in the app. */}
+        {/* your bird, peeking up from the bottom of a round button */}
         <Pressable
           onPress={() => router.push('/settings')}
           accessibilityRole="button"
           accessibilityLabel="Settings"
           hitSlop={t.space.xs}
-          style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
+          style={({ pressed }) => [
+            styles.me,
+            {
+              width: ME,
+              height: ME,
+              borderRadius: ME / 2,
+              backgroundColor: t.colors.surface,
+              borderColor: t.colors.border,
+              opacity: pressed ? 0.8 : 1,
+            },
+          ]}
         >
-          <Avatar name="You" color={birdColors[0].color} size={t.size.minTapTarget + t.space.xs} decorative />
+          <View style={{ marginBottom: -ME * 0.1 }}>
+            <Bird color={birdColor(look)} seed={look.seed} extra={look.extra} size={ME * 0.8} />
+          </View>
         </Pressable>
       </View>
       <View style={styles.fill}>{children}</View>
@@ -75,4 +93,10 @@ const styles = StyleSheet.create({
   fill: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  me: {
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    overflow: 'hidden',
+    borderWidth: StyleSheet.hairlineWidth,
+  },
 });

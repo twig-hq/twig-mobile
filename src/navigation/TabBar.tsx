@@ -1,16 +1,19 @@
 import { Tabs } from 'expo-router';
 import { useState, type ComponentProps } from 'react';
-import { Animated, Image, Pressable, StyleSheet, View } from 'react-native';
+import { Animated, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Ellipse, Path } from 'react-native-svg';
 
+import { Bird, birdColor, SAMPLE_BIRD } from '@/birds';
 import { Button, Icon, ListRow, Sheet, Text } from '@/components';
 import { usePressScale } from '@/components/motion';
+import { useSession } from '@/session';
 import { useTheme } from '@/theme';
 
 import { TABS, type TabRoute } from './tabs';
 
-const tabPrint = require('../../assets/images/tab-print.png');
+/** The width of your print behind the open tab's icon. */
+const PRINT = 40;
 
 type Props = Parameters<NonNullable<ComponentProps<typeof Tabs>['tabBar']>>[0];
 
@@ -58,6 +61,7 @@ function TabIcon({ route, color, strokeWidth }: { route: TabRoute; color: string
 export function TabBar({ state, emitter, navigateToTab }: Props) {
   const t = useTheme();
   const insets = useSafeAreaInsets();
+  const look = useSession().account?.bird ?? SAMPLE_BIRD;
   const [sharing, setSharing] = useState(false);
   const press = usePressScale();
   const active = state.routes[state.index]?.name;
@@ -79,8 +83,12 @@ export function TabBar({ state, emitter, navigateToTab }: Props) {
         style={[styles.tab, { minHeight: t.size.minTapTarget, gap: t.space.xxs }]}
       >
         <View style={styles.icon} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-          {/* A thumbprint under the open tab. It is gold for everyone until people have their own colour. */}
-          {on && <Image source={tabPrint} style={styles.print} />}
+          {/* a smudge of your own thumbprint under the open tab */}
+          {on && (
+            <View style={styles.print}>
+              <Bird color={birdColor(look)} seed={look.seed} size={PRINT} bare />
+            </View>
+          )}
           <TabIcon
             route={route}
             color={on ? t.colors.text : t.colors.textSubtle}
@@ -160,7 +168,7 @@ const styles = StyleSheet.create({
   bar: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-around' },
   tab: { flex: 1, alignItems: 'center' },
   icon: { alignItems: 'center', justifyContent: 'center' },
-  print: { position: 'absolute', width: 36, height: 36, opacity: 0.85 },
+  print: { position: 'absolute', top: -PRINT * 0.32, opacity: 0.6 },
   share: { marginTop: -24 },
   shareButton: { alignItems: 'center', justifyContent: 'center' },
 });
