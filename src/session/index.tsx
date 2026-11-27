@@ -12,16 +12,26 @@ export type SessionValue = {
   /** Development builds only: look around the signed-in app without an account. */
   preview: boolean;
   startPreview: () => void;
+  /**
+   * While held, a new session does not yet count as signed in. The code screen
+   * holds while it checks a code, so the egg can hatch before the app moves on.
+   */
+  holdSignedOut: (held: boolean) => void;
   signOut: () => Promise<void>;
 };
 
 /**
  * The rule the whole app's routing follows. A stored session and the
- * development preview both count as signed in; nothing is decided until the
- * stored session has been read.
+ * development preview both count as signed in, unless the sign-in screen is
+ * holding for a moment; nothing is decided until the stored session has been read.
  */
-export function statusFor(loaded: boolean, hasSession: boolean, preview: boolean): SessionStatus {
-  if (hasSession || preview) return 'signedIn';
+export function statusFor(
+  loaded: boolean,
+  hasSession: boolean,
+  preview: boolean,
+  held = false,
+): SessionStatus {
+  if ((hasSession || preview) && !held) return 'signedIn';
   return loaded ? 'signedOut' : 'loading';
 }
 
@@ -33,6 +43,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [loaded, setLoaded] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
   const [preview, setPreview] = useState(false);
+  const [held, setHeld] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -60,8 +71,15 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<SessionValue>(
-    () => ({ status: statusFor(loaded, session !== null, preview), session, preview, startPreview, signOut }),
-    [loaded, session, preview, startPreview, signOut],
+    () => ({
+      status: statusFor(loaded, session !== null, preview, held),
+      session,
+      preview,
+      startPreview,
+      holdSignedOut: setHeld,
+      signOut,
+    }),
+    [loaded, session, preview, held, startPreview, signOut],
   );
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }

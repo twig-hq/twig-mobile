@@ -23,6 +23,7 @@ import {
   TextField,
   useToast,
 } from '@/components';
+import { Egg } from '@/auth/Egg';
 import { SchemeSwitch } from '@/dev/SchemeSwitch';
 import { birdColors, ThemeScheme, useTheme, type Scheme } from '@/theme';
 
@@ -54,6 +55,7 @@ function Gallery({ scheme, onScheme }: { scheme: Scheme; onScheme: (s: Scheme) =
   const [sheet, setSheet] = useState(false);
   const [note, setNote] = useState(true);
   const toast = useToast();
+  const [hatched, setHatched] = useState(false);
 
   const press = (what: string) => () => setPressed(what);
 
@@ -229,6 +231,21 @@ function Gallery({ scheme, onScheme }: { scheme: Scheme; onScheme: (s: Scheme) =
           <Card>
             <ErrorView onRetry={press('Try again')} />
           </Card>
+        </Section>
+
+        <Section title="Sign-in egg">
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-end', gap: t.space.lg }}>
+            <Egg wobble />
+            <Egg cracks={3} />
+            <Egg cracks={6} />
+            <Egg mood="unsure" />
+            <Egg mood={hatched ? 'hatched' : 'waiting'} cracks={6} size={90} />
+          </View>
+          <Button
+            label={hatched ? 'Back in the egg' : 'Hatch'}
+            variant="secondary"
+            onPress={() => setHatched(!hatched)}
+          />
         </Section>
 
         <Section title="Cards">

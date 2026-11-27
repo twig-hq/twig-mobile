@@ -2,7 +2,7 @@
 -- anon can call nothing, and grant tables can't be written directly.
 begin;
 \ir _helpers.psql
-select plan(20);
+select plan(22);
 
 select tables_are('public', array[
   'profiles', 'contact_labels', 'blocks', 'user_preferences',
@@ -101,6 +101,16 @@ select results_eq(
   'select id, public from storage.buckets where id in (''media'', ''exports'') order by id',
   $$values ('exports'::text, false), ('media'::text, false)$$,
   'both buckets are private');
+
+select results_eq(
+  'select public, file_size_limit, allowed_mime_types from storage.buckets where id = ''email''',
+  $$values (true, 1048576::bigint, array['image/png'])$$,
+  'the email pictures bucket is public and takes only small PNGs');
+
+select is((select count(*)::int from pg_policies
+            where schemaname = 'storage' and tablename = 'objects'
+              and (coalesce(qual, '') || coalesce(with_check, '')) like '%''email''%'), 0,
+          'no policy lets an app user list or change the email pictures');
 
 select ok(exists (select 1 from pg_indexes where indexname = 'relationships_one_open_per_pair'
                    and indexdef like '%WHERE (status = ANY%'),

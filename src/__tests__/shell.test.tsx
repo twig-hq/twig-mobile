@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
+import { router } from 'expo-router';
 import type { ComponentProps, ReactNode } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -25,6 +26,7 @@ const signedOut: SessionValue = {
   session: null,
   preview: false,
   startPreview: jest.fn(),
+  holdSignedOut: jest.fn(),
   signOut: jest.fn(async () => {}),
 };
 
@@ -43,6 +45,11 @@ describe('who sees what', () => {
 
   it('sends people without a session to the signed-out screens', () => {
     expect(statusFor(true, false, false)).toBe('signedOut');
+  });
+
+  it('keeps a brand-new session waiting while the sign-in screen holds it', () => {
+    expect(statusFor(true, true, false, true)).toBe('signedOut');
+    expect(statusFor(true, true, false, false)).toBe('signedIn');
   });
 
   it('treats a session, or the development preview, as signed in', () => {
@@ -75,8 +82,14 @@ describe('WelcomeScreen', () => {
     expect(screen.getByRole('image', { name: SCENE_LABEL })).toBeTruthy();
     expect(screen.getByRole('header', { name: 'Closer, twig by twig' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Continue with Apple' })).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Continue with Apple' }));
+    expect(
+      screen.getByText('Sign in with Apple is coming soon.', { includeHiddenElements: true }),
+    ).toBeTruthy();
+    const push = jest.spyOn(router, 'push').mockImplementation(() => {});
     await fireEvent.press(screen.getByRole('button', { name: 'Continue with email' }));
-    expect(screen.getByText('Signing in is coming soon.', { includeHiddenElements: true })).toBeTruthy();
+    expect(push).toHaveBeenCalledWith('/email');
+    push.mockRestore();
   });
 
   it('offers the development preview', async () => {

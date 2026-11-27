@@ -1,4 +1,4 @@
-import { Link } from 'expo-router';
+import { Link, router } from 'expo-router';
 import { Animated, Image, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -10,8 +10,8 @@ import { DESIGN, TAGLINE } from '@/welcome/scene';
 import { useWelcomeTimeline, WelcomeScene, wordmark } from '@/welcome/WelcomeScene';
 
 // The first screen: the logo from the splash screen becomes the birds, then
-// the ways to sign in rise into place. Signing in itself arrives with issues
-// #26 (email code) and #27 (Apple); until then the buttons say so.
+// the ways to sign in rise into place. Sign in with Apple arrives with issue
+// #27; until then that button says so.
 export default function WelcomeScreen() {
   // The picture is drawn in ink on cream, so this screen stays light in dark mode too.
   return (
@@ -36,7 +36,7 @@ function Welcome() {
     opacity: v,
     transform: [{ translateY: v.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }],
   });
-  const soon = () => toast.show('Signing in is coming soon.');
+  const soon = () => toast.show('Sign in with Apple is coming soon.');
 
   return (
     <View style={[styles.fill, { backgroundColor: t.colors.background }]}>
@@ -74,7 +74,7 @@ function Welcome() {
           label="Continue with email"
           variant="secondary"
           icon={<Icon name="mail" size={t.size.iconSmall + t.space.xxs} strokeWidth={2} />}
-          onPress={soon}
+          onPress={() => router.push('/email')}
         />
         <Text variant="footnote" color="textMuted" align="center">
           You agree to our Terms and Privacy Policy.

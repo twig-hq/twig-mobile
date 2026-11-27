@@ -65,7 +65,7 @@ Twig (production):
 | --- | --- | --- |
 | Site URL, redirect URLs | `http://localhost:3000`, none | The app's URL scheme once the Expo app exists |
 | Email sign-in | Supabase's built-in sender: 2 emails an hour, team members only | Custom SMTP on a domain we own |
-| Email code length | 8 | Decide: 6 is easier for parents to type |
+| Email code length | 8 | 6, decided November 24, 2026 (see "Sign-in settings" below) |
 | Sign in with Apple, Google | Off | On, after the Apple Developer account and Google client exist |
 | Database SSL enforcement | Off | On |
 | Network restrictions | Open | Stay open: CI deploys from GitHub's runners |
@@ -80,3 +80,58 @@ Twig Dev differs from the table above only where it says so here (November 23, 2
 | GitHub integration | Not connected | GitHub Actions deploys |
 | Legacy API keys (`anon`, `service_role`) | Enabled; to be disabled, as on Twig | New projects start with them on; nothing uses them |
 | Backups | None, and none planned | Test data only |
+
+## Sign-in settings
+
+The app signs people in with a code sent by email (`src/auth/emailCode.ts`). Three numbers in that file must match the project, and the email must show the code. Set these in the dashboard, on Twig Dev first and on Twig once sign-in is proven there.
+
+| Where in the dashboard | Setting | Value | In the app |
+| --- | --- | --- | --- |
+| Authentication → Sign In / Providers → Email | Email OTP length | 6 | `CODE_LENGTH` |
+| Authentication → Sign In / Providers → Email | Email OTP expiration | 600 seconds | `EXPIRES_AFTER_S` |
+| Authentication → Rate Limits | Wait between codes to one address | 60 seconds (the default) | `RESEND_AFTER_S` |
+| Authentication → Emails → Templates → Magic Link | Subject and message body | The `sign-in` email (below) | |
+| Authentication → Emails → Templates → Confirm signup | Subject and message body | The `welcome` email (below). A new person's first email uses this template | |
+
+Until the length is 6, the emailed code has 8 digits and does not fit the app's six boxes.
+
+### The emails
+
+The two emails are designed in `emails/` (see the README's table). `welcome` is for a new person and goes in the **Confirm signup** template; `sign-in` is for someone coming back and goes in **Magic Link**. Each file starts with the subject line to paste into the dashboard.
+
+- Keep **Confirm email** switched on (Authentication → Sign In / Providers → Email). With it off, new people get the Magic Link email and never see the welcome.
+- Email apps only show pictures that are on the public web, so each project has a public storage bucket called `email` (created by a migration). The pictures in `emails/images/` go in a version folder inside it, `v1` for now. Uploading needs the dashboard (Storage → email) or a secret key; the app's own key cannot write there.
+- Build the ready-to-paste emails with the bucket's address, then paste each file from `emails/out/` into its template:
+
+  ```bash
+  node emails/build.mjs https://<project ref>.supabase.co/storage/v1/object/public/email/v1
+  ```
+
+- Pictures are cached for a year. If one changes, upload the set to a new folder (`v2`) and rebuild with that address.
+- Twig Dev has the bucket and the `v1` pictures (November 26, 2026). Twig gets the empty bucket when the migration deploys; its pictures still need uploading.
+- `node emails/build.mjs` with no address builds a preview with a sample code, to open in a browser.
+
+If the pictures are ever unavailable, this plain body works for both templates:
+
+```html
+<h2>Your Twig code</h2>
+<p>Enter this code in the app to sign in:</p>
+<p style="font-size: 28px; letter-spacing: 4px;"><strong>{{ .Token }}</strong></p>
+<p>It works for 10 minutes. If you did not ask for it, you can ignore this email.</p>
+```
+
+**The emails need our own sender first.** On the Free plan the dashboard locks the templates ("Set up custom SMTP to edit templates") and Supabase's built-in sender sends its default email, which has a sign-in link and no code. So code sign-in cannot work, even for development, until custom SMTP is set up (Authentication → Emails → SMTP Settings, issue #37) or the project is on Pro. The built-in sender is also limited to 2 emails an hour, to members of the Supabase organization.
+
+State of Twig Dev on November 26, 2026: code length 6 and expiry 600 seconds; custom SMTP on, through Resend; both templates pasted from `emails/` with the `v1` pictures. Twig (production) has none of this yet.
+
+### The sender
+
+| Where | Setting |
+| --- | --- |
+| Resend (account adelpazoki85) | Domain `hellotwig.app`, US East, verified November 26, 2026. Click and open tracking off |
+| DNS for `hellotwig.app` (Wix) | `TXT resend._domainkey` (DKIM), `CNAME rsend` and `CNAME send` to Resend, `TXT _dmarc` = `v=DMARC1; p=none;` |
+| Supabase → Authentication → Emails → SMTP Settings | Sender `admin@hellotwig.app`, name `Twig`, host `smtp.resend.com`, port 465, username `resend`, password = a Resend API key with sending access to `hellotwig.app` only |
+
+The API key lives only in Resend and in Supabase's SMTP settings, never in this repo. If it leaks, delete it in Resend (API Keys), create a new one and paste it into Supabase. With custom SMTP on, Supabase allows 30 auth emails an hour (Authentication → Rate Limits). Twig gets its own key when its sign-in is set up.
+
+The server gives the same answer for a wrong code and an expired one, so the app decides which to say from how long ago it sent the code.
