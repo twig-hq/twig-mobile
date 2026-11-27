@@ -29,6 +29,7 @@ const signedOut: SessionValue = {
   holdSignedOut: jest.fn(),
   account: null,
   setOnboarded: jest.fn(async () => {}),
+  saveProfile: jest.fn(async () => {}),
   reloadAccount: jest.fn(),
   signOut: jest.fn(async () => ({ ok: true })),
 };
@@ -80,8 +81,9 @@ describe('who sees what', () => {
     expect(status({ account: 'failed' })).toBe('error');
   });
 
-  it('lets the development preview in without an account', () => {
-    expect(status({ hasSession: false, account: 'none', preview: true })).toBe('signedIn');
+  it('takes the development preview through onboarding, then into the app', () => {
+    expect(status({ hasSession: false, account: 'onboarding', preview: true })).toBe('onboarding');
+    expect(status({ hasSession: false, account: 'ready', preview: true })).toBe('signedIn');
   });
 });
 

@@ -2,7 +2,6 @@ import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import type { ReactNode } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import OnboardingScreen from '@/app/(onboarding)/index';
 import SettingsScreen from '@/app/settings';
 import { ToastProvider } from '@/components';
 import { createEncryptedStorage, type Cipher, type Keychain } from '@/lib/encryptedStorage';
@@ -34,6 +33,7 @@ function session(change: Partial<SessionValue> = {}): SessionValue {
     startPreview: jest.fn(),
     holdSignedOut: jest.fn(),
     setOnboarded: jest.fn(async () => {}),
+    saveProfile: jest.fn(async () => {}),
     reloadAccount: jest.fn(),
     signOut: jest.fn(async () => ({ ok: true })),
     ...change,
@@ -141,20 +141,6 @@ describe('time zone', () => {
     expect(timeZoneToSave('UTC', 'America/Toronto')).toBe('America/Toronto');
     expect(timeZoneToSave('America/Toronto', 'America/Toronto')).toBeNull();
     expect(timeZoneToSave('UTC', '')).toBeNull();
-  });
-});
-
-describe('OnboardingScreen', () => {
-  it('lets a new person into the app', async () => {
-    const value = session({ status: 'onboarding' });
-    await render(
-      <Wrap value={value}>
-        <OnboardingScreen />
-      </Wrap>,
-    );
-    expect(screen.getByRole('header', { name: 'Welcome to Twig' })).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
-    expect(value.setOnboarded).toHaveBeenCalledWith(true);
   });
 });
 

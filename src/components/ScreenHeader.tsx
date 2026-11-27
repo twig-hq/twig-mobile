@@ -38,7 +38,7 @@ export function ScreenHeader({ onBack, title, action, right }: Props) {
         },
       ]}
     >
-      <View style={[styles.side, { minWidth: side }]}>
+      <View style={[styles.side, { minWidth: side, minHeight: side }]}>
         {onBack && (
           <Pressable
             onPress={onBack}

@@ -1,10 +1,19 @@
 import type { Session } from '@supabase/supabase-js';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
+import { deviceTimeZone } from '@/auth/emailCode';
+import { SAMPLE_BIRD } from '@/birds';
 import { clearLocalData } from '@/lib/encryptedStorage';
 import { supabase } from '@/lib/supabase';
 
-import { loadAccount, refreshTimeZone, setOnboarded, type Account } from './account';
+import {
+  loadAccount,
+  refreshTimeZone,
+  saveProfile,
+  setOnboarded,
+  type Account,
+  type ProfileChanges,
+} from './account';
 
 /**
  * Where the app is allowed to be.
@@ -39,7 +48,8 @@ export type StatusInput = {
  */
 export function statusFor(s: StatusInput): SessionStatus {
   if (!s.loaded) return 'loading';
-  if (s.preview) return 'signedIn';
+  // the development preview has a pretend account, which goes through onboarding too
+  if (s.preview) return s.account === 'onboarding' ? 'onboarding' : 'signedIn';
   if (!s.hasSession || s.held) return 'signedOut';
   switch (s.account) {
     case 'onboarding':
@@ -69,6 +79,8 @@ export type SessionValue = {
   holdSignedOut: (held: boolean) => void;
   /** Saves that onboarding is finished (or, in development, not finished), then moves on. */
   setOnboarded: (done: boolean) => Promise<void>;
+  /** Saves the name, role and bird from onboarding. */
+  saveProfile: (changes: ProfileChanges) => Promise<void>;
   /** Tries loading the account again, after an error. */
   reloadAccount: () => void;
   /**
@@ -86,6 +98,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [loaded, setLoaded] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
   const [preview, setPreview] = useState(false);
+  // development only: an account that lives in memory, so onboarding can be tried without signing up
+  const [pretend, setPretend] = useState<Account | null>(null);
   const [held, setHeld] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [result, setResult] = useState<Loaded | null>(null);
@@ -130,16 +144,21 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, [userId, attempt]);
 
   const current = result && result.userId === userId && result.attempt === attempt ? result : null;
-  const account = current?.account ?? null;
-  const accountState: AccountState = !userId
-    ? 'none'
-    : !current
-      ? 'loading'
-      : !account
-        ? 'failed'
-        : account.onboarded
-          ? 'ready'
-          : 'onboarding';
+  const previewing = preview && !session;
+  const account = previewing ? pretend : (current?.account ?? null);
+  const accountState: AccountState = previewing
+    ? pretend?.onboarded
+      ? 'ready'
+      : 'onboarding'
+    : !userId
+      ? 'none'
+      : !current
+        ? 'loading'
+        : !account
+          ? 'failed'
+          : account.onboarded
+            ? 'ready'
+            : 'onboarding';
 
   const status = statusFor({
     loaded,
@@ -153,16 +172,56 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   if (status !== shown) setShown(status);
 
   const startPreview = useCallback(() => {
-    if (__DEV__) setPreview(true);
+    if (!__DEV__) return;
+    setPretend({
+      profileId: 'preview',
+      displayName: '',
+      timeZone: deviceTimeZone(),
+      bird: { ...SAMPLE_BIRD, color: null, extra: 'none' },
+      role: null,
+      onboarded: false,
+    });
+    setPreview(true);
   }, []);
 
   const markOnboarded = useCallback(
     async (done: boolean) => {
+      if (previewing) {
+        setPretend((a) => (a ? { ...a, onboarded: done } : a));
+        return;
+      }
       if (!account) return;
       await setOnboarded(account.profileId, done);
       setResult((r) => (r && r.account ? { ...r, account: { ...r.account, onboarded: done } } : r));
     },
-    [account],
+    [account, previewing],
+  );
+
+  const saveChanges = useCallback(
+    async (changes: ProfileChanges) => {
+      if (previewing) {
+        setPretend((a) =>
+          a ? { ...a, displayName: changes.displayName.trim(), role: changes.role, bird: changes.bird } : a,
+        );
+        return;
+      }
+      if (!account) return;
+      await saveProfile(account.profileId, changes);
+      setResult((r) =>
+        r && r.account
+          ? {
+              ...r,
+              account: {
+                ...r.account,
+                displayName: changes.displayName.trim(),
+                role: changes.role,
+                bird: changes.bird,
+              },
+            }
+          : r,
+      );
+    },
+    [account, previewing],
   );
 
   const reloadAccount = useCallback(() => setAttempt((n) => n + 1), []);
@@ -170,6 +229,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const signOut = useCallback(async () => {
     if (preview && !session) {
       setPreview(false);
+      setPretend(null);
       return { ok: true };
     }
     // this phone only: the person stays signed in on their other devices
@@ -189,10 +249,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       startPreview,
       holdSignedOut: setHeld,
       setOnboarded: markOnboarded,
+      saveProfile: saveChanges,
       reloadAccount,
       signOut,
     }),
-    [status, session, account, preview, startPreview, markOnboarded, reloadAccount, signOut],
+    [status, session, account, preview, startPreview, markOnboarded, saveChanges, reloadAccount, signOut],
   );
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }
