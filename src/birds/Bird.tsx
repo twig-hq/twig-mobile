@@ -32,6 +32,8 @@ type Props = {
   flipped?: boolean;
   /** Only the print, with no face, wing, tail or legs: the moment before it becomes a bird. */
   bare?: boolean;
+  /** How many ridges to draw, from the middle out (all 15 by default). Onboarding grows the print with it. */
+  rings?: number;
   /** What screen readers say. Leave it out when the bird is decoration next to a name. */
   accessibilityLabel?: string;
 };
@@ -66,13 +68,15 @@ export const Bird = memo(function Bird({
   size,
   flipped = false,
   bare = false,
+  rings,
   accessibilityLabel,
 }: Props) {
   // pen lines are ink on cream, and cream on the dark background
   const ink = useTheme().colors.pen;
   const k = size / VIEW.width;
   const height = VIEW.height * k;
-  const lines = useMemo(() => ridges(seed), [seed]);
+  const all = useMemo(() => ridges(seed), [seed]);
+  const lines = rings === undefined ? all : all.slice(0, Math.max(0, rings));
   const pen = {
     color: ink,
     style: 'stroke',

@@ -71,3 +71,24 @@ export async function setOnboarded(profileId: string, done: boolean): Promise<vo
   const { error: insertError } = await supabase.from('user_preferences').insert({ completed_at });
   if (insertError) throw insertError;
 }
+
+export type ProfileChanges = {
+  displayName: string;
+  role: 'parent' | 'child';
+  bird: BirdLook;
+};
+
+/** Saves what onboarding asked: the name, the role and the bird. */
+export async function saveProfile(profileId: string, c: ProfileChanges): Promise<void> {
+  const { error } = await supabase
+    .from('profiles')
+    .update({
+      display_name: c.displayName.trim(),
+      family_role: c.role,
+      bird_seed: c.bird.seed,
+      bird_color: c.bird.color,
+      bird_extra: c.bird.extra,
+    })
+    .eq('id', profileId);
+  if (error) throw error;
+}
