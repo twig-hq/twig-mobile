@@ -122,6 +122,16 @@ If the pictures are ever unavailable, this plain body works for both templates:
 
 **The emails need our own sender first.** On the Free plan the dashboard locks the templates ("Set up custom SMTP to edit templates") and Supabase's built-in sender sends its default email, which has a sign-in link and no code. So code sign-in cannot work, even for development, until custom SMTP is set up (Authentication → Emails → SMTP Settings, issue #37) or the project is on Pro. The built-in sender is also limited to 2 emails an hour, to members of the Supabase organization.
 
-State of Twig Dev on November 26, 2026: code length 6 and expiry 600 seconds are set; custom SMTP is off, so the templates are still the defaults.
+State of Twig Dev on November 26, 2026: code length 6 and expiry 600 seconds; custom SMTP on, through Resend; both templates pasted from `emails/` with the `v1` pictures. Twig (production) has none of this yet.
+
+### The sender
+
+| Where | Setting |
+| --- | --- |
+| Resend (account adelpazoki85) | Domain `hellotwig.app`, US East, verified November 26, 2026. Click and open tracking off |
+| DNS for `hellotwig.app` (Wix) | `TXT resend._domainkey` (DKIM), `CNAME rsend` and `CNAME send` to Resend, `TXT _dmarc` = `v=DMARC1; p=none;` |
+| Supabase → Authentication → Emails → SMTP Settings | Sender `admin@hellotwig.app`, name `Twig`, host `smtp.resend.com`, port 465, username `resend`, password = a Resend API key with sending access to `hellotwig.app` only |
+
+The API key lives only in Resend and in Supabase's SMTP settings, never in this repo. If it leaks, delete it in Resend (API Keys), create a new one and paste it into Supabase. With custom SMTP on, Supabase allows 30 auth emails an hour (Authentication → Rate Limits). Twig gets its own key when its sign-in is set up.
 
 The server gives the same answer for a wrong code and an expired one, so the app decides which to say from how long ago it sent the code.
