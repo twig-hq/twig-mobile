@@ -10,6 +10,7 @@ import {
   checkCode,
   checkMessages,
   countdown,
+  deviceTimeZone,
   EXPIRES_AFTER_S,
   isEmail,
   lastSentAt,
@@ -96,7 +97,7 @@ describe('sendCode', () => {
     expect(await sendCode(' Sam@Example.com ', 5_000)).toEqual({ ok: true });
     expect(signInWithOtp).toHaveBeenCalledWith({
       email: 'sam@example.com',
-      options: { shouldCreateUser: true },
+      options: { shouldCreateUser: true, data: { timezone: deviceTimeZone() } },
     });
     expect(lastSentAt('sam@example.com')).toBe(5_000);
   });
@@ -122,6 +123,20 @@ describe('sendCode', () => {
     signInWithOtp.mockResolvedValue(fail(message, status, code));
     expect(await sendCode('sam@example.com')).toEqual({ ok: false, problem });
     expect(lastSentAt('sam@example.com')).toBeUndefined();
+  });
+
+  it("starts a new account in the phone's time zone", () => {
+    expect(deviceTimeZone()).toMatch(/^(UTC|[A-Za-z_]+\/[A-Za-z_\/+-]+)$/);
+  });
+
+  it('calls a server error a problem on our side, not a lost connection', async () => {
+    signInWithOtp.mockResolvedValue({
+      data: {},
+      error: new AuthRetryableFetchError('Internal Server Error', 500),
+    });
+    expect(await sendCode('sam@example.com')).toEqual({ ok: false, problem: 'other' });
+    verifyOtp.mockResolvedValue({ data: {}, error: new AuthRetryableFetchError('Bad Gateway', 502) });
+    expect(await checkCode('sam@example.com', '123456')).toEqual({ ok: false, problem: 'other' });
   });
 
   it('says so when the phone is offline, whether the library returns or throws the error', async () => {

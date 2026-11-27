@@ -23,6 +23,18 @@ export function tidyEmail(text: string): string {
   return text.trim().toLowerCase();
 }
 
+/**
+ * The phone's time zone, like "America/Los_Angeles". A new account starts in
+ * it; the database falls back to UTC for anything it does not recognise.
+ */
+export function deviceTimeZone(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+  } catch {
+    return 'UTC';
+  }
+}
+
 /** "0:24", for the wait before a code can be sent again. */
 export function countdown(seconds: number): string {
   const s = Math.max(0, Math.ceil(seconds));
@@ -69,7 +81,11 @@ export async function sendCode(email: string, now: number = Date.now()): Promise
   if (!isEmail(address)) return { ok: false, problem: 'invalid' };
   let error: unknown;
   try {
-    ({ error } = await supabase.auth.signInWithOtp({ email: address, options: { shouldCreateUser: true } }));
+    ({ error } = await supabase.auth.signInWithOtp({
+      email: address,
+      // `data` only applies when this creates the account
+      options: { shouldCreateUser: true, data: { timezone: deviceTimeZone() } },
+    }));
   } catch (thrown) {
     error = thrown;
   }
@@ -92,8 +108,14 @@ export async function checkCode(email: string, code: string): Promise<Result<Che
   return { ok: false, problem: checkProblem(error) };
 }
 
+// The library files server errors (5xx) under the same type as a failed
+// connection; only status 0 means the phone never reached the server.
+function unreachable(error: unknown): boolean {
+  return isAuthRetryableFetchError(error) && error.status === 0;
+}
+
 function sendProblem(error: unknown): SendProblem {
-  if (isAuthRetryableFetchError(error)) return 'offline';
+  if (unreachable(error)) return 'offline';
   if (!isAuthApiError(error)) return 'other';
   switch (error.code) {
     case 'over_email_send_rate_limit':
@@ -113,7 +135,7 @@ function sendProblem(error: unknown): SendProblem {
 }
 
 function checkProblem(error: unknown): CheckProblem {
-  if (isAuthRetryableFetchError(error)) return 'offline';
+  if (unreachable(error)) return 'offline';
   if (!isAuthApiError(error)) return 'other';
   // The server gives one answer for a wrong code and an expired one. The code
   // screen knows how long ago the code was sent, and words it from that.
