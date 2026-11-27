@@ -51,7 +51,10 @@ const session: SessionValue = {
   preview: false,
   startPreview: jest.fn(),
   holdSignedOut: jest.fn(),
-  signOut: jest.fn(async () => {}),
+  account: null,
+  setOnboarded: jest.fn(async () => {}),
+  reloadAccount: jest.fn(),
+  signOut: jest.fn(async () => ({ ok: true })),
 };
 const holdSignedOut = session.holdSignedOut as jest.Mock;
 

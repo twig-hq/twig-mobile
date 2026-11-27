@@ -1,18 +1,17 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 import { AppState, Platform } from 'react-native';
 
 import type { Database } from './database.types';
+import { sessionStorage } from './encryptedStorage';
 import { readSupabaseEnv } from './env';
 
 const { url, publishableKey } = readSupabaseEnv();
 
 // One client for the whole app, typed from the generated database types.
-// The session is kept in AsyncStorage. Encrypting it (SecureStore) is part of
-// the sign-in work, issue #3.
+// The session is kept encrypted on the phone (see encryptedStorage.ts).
 export const supabase = createClient<Database>(url, publishableKey, {
   auth: {
-    storage: AsyncStorage,
+    storage: sessionStorage,
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,

@@ -8,7 +8,7 @@ import InviteLinkScreen from '@/app/invite/[code]';
 import { ToastProvider } from '@/components';
 import { TabBar } from '@/navigation/TabBar';
 import { greeting, TABS } from '@/navigation/tabs';
-import { SessionContext, statusFor, type SessionValue } from '@/session';
+import { SessionContext, statusFor, type SessionValue, type StatusInput } from '@/session';
 import { BUBBLES, BUTTONS_AT, FLY, FLYERS, LOOP_AT, SCENE_LABEL, STAMPED } from '@/welcome/scene';
 
 const mockParams = jest.fn(() => ({}) as { code?: string });
@@ -27,7 +27,10 @@ const signedOut: SessionValue = {
   preview: false,
   startPreview: jest.fn(),
   holdSignedOut: jest.fn(),
-  signOut: jest.fn(async () => {}),
+  account: null,
+  setOnboarded: jest.fn(async () => {}),
+  reloadAccount: jest.fn(),
+  signOut: jest.fn(async () => ({ ok: true })),
 };
 
 function Wrap({ children, session = signedOut }: { children: ReactNode; session?: SessionValue }) {
@@ -39,23 +42,46 @@ function Wrap({ children, session = signedOut }: { children: ReactNode; session?
 }
 
 describe('who sees what', () => {
+  const base: StatusInput = {
+    loaded: true,
+    hasSession: true,
+    preview: false,
+    held: false,
+    account: 'ready',
+    previous: 'signedOut',
+  };
+  const status = (change: Partial<StatusInput>) => statusFor({ ...base, ...change });
+
   it('decides nothing until the stored session has been read', () => {
-    expect(statusFor(false, false, false)).toBe('loading');
+    expect(status({ loaded: false })).toBe('loading');
+    expect(status({ loaded: false, hasSession: false })).toBe('loading');
   });
 
   it('sends people without a session to the signed-out screens', () => {
-    expect(statusFor(true, false, false)).toBe('signedOut');
+    expect(status({ hasSession: false, account: 'none' })).toBe('signedOut');
   });
 
   it('keeps a brand-new session waiting while the sign-in screen holds it', () => {
-    expect(statusFor(true, true, false, true)).toBe('signedOut');
-    expect(statusFor(true, true, false, false)).toBe('signedIn');
+    expect(status({ held: true })).toBe('signedOut');
   });
 
-  it('treats a session, or the development preview, as signed in', () => {
-    expect(statusFor(true, true, false)).toBe('signedIn');
-    expect(statusFor(false, true, false)).toBe('signedIn');
-    expect(statusFor(true, false, true)).toBe('signedIn');
+  it('sends a new person to onboarding, and everyone else to the tabs', () => {
+    expect(status({ account: 'onboarding' })).toBe('onboarding');
+    expect(status({ account: 'ready' })).toBe('signedIn');
+  });
+
+  it('keeps showing what it showed while the account loads, so nothing flashes', () => {
+    expect(status({ account: 'loading', previous: 'loading' })).toBe('loading');
+    expect(status({ account: 'loading', previous: 'signedOut' })).toBe('signedOut');
+    expect(status({ account: 'loading', previous: 'signedIn' })).toBe('signedIn');
+  });
+
+  it('says so when the account cannot be loaded', () => {
+    expect(status({ account: 'failed' })).toBe('error');
+  });
+
+  it('lets the development preview in without an account', () => {
+    expect(status({ hasSession: false, account: 'none', preview: true })).toBe('signedIn');
   });
 });
 

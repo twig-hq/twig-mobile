@@ -4,6 +4,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 
 import { ToastProvider } from '@/components';
+import { AccountError } from '@/session/AccountError';
 import { SessionProvider, useSession } from '@/session';
 import { fontFiles, useTheme } from '@/theme';
 
@@ -19,8 +20,10 @@ export default function RootLayout() {
   );
 }
 
-// Signed-out people only reach the (auth) screens; signed-in people only reach
-// the tabs and Settings. The development screens and invite links are open to both.
+// Signed-out people only reach the (auth) screens, people who have not
+// finished onboarding only reach (onboarding), and everyone else reaches the
+// tabs and Settings (the rule is statusFor in src/session). The development
+// screens and invite links are open to all.
 function Shell() {
   const [loaded, error] = useFonts(fontFiles);
   const theme = useTheme();
@@ -32,7 +35,6 @@ function Shell() {
   }, [ready]);
 
   if (!ready) return null;
-  const signedIn = status === 'signedIn';
 
   const base = theme.scheme === 'dark' ? DarkTheme : DefaultTheme;
   const navTheme = {
@@ -51,15 +53,22 @@ function Shell() {
   return (
     <ThemeProvider value={navTheme}>
       <ToastProvider>
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Protected guard={signedIn}>
-            <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="settings" />
-          </Stack.Protected>
-          <Stack.Protected guard={!signedIn}>
-            <Stack.Screen name="(auth)" />
-          </Stack.Protected>
-        </Stack>
+        {status === 'error' ? (
+          <AccountError />
+        ) : (
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Protected guard={status === 'signedIn'}>
+              <Stack.Screen name="(tabs)" />
+              <Stack.Screen name="settings" />
+            </Stack.Protected>
+            <Stack.Protected guard={status === 'onboarding'}>
+              <Stack.Screen name="(onboarding)" />
+            </Stack.Protected>
+            <Stack.Protected guard={status === 'signedOut'}>
+              <Stack.Screen name="(auth)" />
+            </Stack.Protected>
+          </Stack>
+        )}
       </ToastProvider>
     </ThemeProvider>
   );
