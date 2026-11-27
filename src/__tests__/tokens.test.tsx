@@ -4,10 +4,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import TokensScreen from '@/app/dev/tokens';
 import { darkColors, lightColors } from '@/theme/colors';
 
-const metrics = {
-  frame: { x: 0, y: 0, width: 390, height: 844 },
-  insets: { top: 47, left: 0, right: 0, bottom: 34 },
-};
+const metrics = { frame: { x: 0, y: 0, width: 390, height: 844 }, insets: { top: 47, left: 0, right: 0, bottom: 34 } };
 
 function renderScreen() {
   return render(
@@ -37,18 +34,7 @@ describe('TokensScreen', () => {
 
   it('shows every text style', async () => {
     await renderScreen();
-    for (const variant of [
-      'display',
-      'title',
-      'headline',
-      'body',
-      'label',
-      'button',
-      'footnote',
-      'caption',
-      'eyebrow',
-      'code',
-    ]) {
+    for (const variant of ['display', 'title', 'headline', 'body', 'label', 'button', 'footnote', 'caption', 'eyebrow', 'code']) {
       expect(screen.getByText(new RegExp(`^${variant} · `))).toBeTruthy();
     }
   });
