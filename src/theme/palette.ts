@@ -14,6 +14,7 @@ export const palette = {
   paper: '#FFFDF8', // fields, cards and sheets
   oat: '#F2EBDD', // sunken areas
   pen: '#2A1C16', // the birds' pen lines
+  butter: '#F0B84A', // a flower's middle, a hat
   slate: '#4A5D54', // secondary text
   black: '#000000', // the Sign in with Apple button, as Apple asks
   white: '#FFFFFF',

@@ -9,6 +9,9 @@ import { createEncryptedStorage, type Cipher, type Keychain } from '@/lib/encryp
 import { utf8Decode, utf8Encode } from '@/lib/utf8';
 import { SessionContext, type SessionValue } from '@/session';
 import { timeZoneToSave } from '@/session/account';
+import { birdColor, toExtra } from '@/birds';
+import { ridges } from '@/birds/drawing';
+import { birdColors } from '@/theme';
 
 const metrics = {
   frame: { x: 0, y: 0, width: 390, height: 844 },
@@ -19,7 +22,14 @@ function session(change: Partial<SessionValue> = {}): SessionValue {
   return {
     status: 'signedIn',
     session: null,
-    account: { profileId: 'p1', displayName: 'Sam', timeZone: 'America/Toronto', onboarded: true },
+    account: {
+      profileId: 'p1',
+      displayName: 'Sam',
+      timeZone: 'America/Toronto',
+      bird: { color: 'gold', seed: 7, extra: 'headphones' },
+      role: 'child',
+      onboarded: true,
+    },
     preview: false,
     startPreview: jest.fn(),
     holdSignedOut: jest.fn(),
@@ -193,5 +203,26 @@ describe('Settings', () => {
       </Wrap>,
     );
     expect(screen.getByText('America/Toronto')).toBeTruthy();
+  });
+});
+
+describe('birds', () => {
+  it('draws the chosen colour, or one picked from the print until a colour is chosen', () => {
+    expect(birdColor({ color: 'gold', seed: 1 })).toBe('#D9A033');
+    expect(birdColor({ color: null, seed: 0 })).toBe(birdColors[0].color);
+    expect(birdColor({ color: null, seed: 15 })).toBe(birdColors[1].color);
+    expect(birdColor({ color: 'purple', seed: 2 })).toBe(birdColors[2].color);
+  });
+
+  it('only accepts the extras it knows how to draw', () => {
+    expect(toExtra('hat')).toBe('hat');
+    expect(toExtra('crown')).toBe('none');
+    expect(toExtra(null)).toBe('none');
+  });
+
+  it('draws the same print for the same seed, and a different one for another', () => {
+    expect(ridges(42)).toEqual(ridges(42));
+    expect(ridges(42)).not.toEqual(ridges(43));
+    expect(ridges(42)).toHaveLength(15);
   });
 });

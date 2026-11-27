@@ -1,4 +1,5 @@
 import { deviceTimeZone } from '@/auth/emailCode';
+import { toExtra, type BirdLook } from '@/birds';
 import { supabase } from '@/lib/supabase';
 
 // What the app needs to know about the signed-in person before it can show
@@ -8,6 +9,9 @@ export type Account = {
   profileId: string;
   displayName: string;
   timeZone: string;
+  bird: BirdLook;
+  /** A parent, or a son or daughter ('child'); null until onboarding asks. */
+  role: 'parent' | 'child' | null;
   /** Onboarding is finished, or was skipped, once user_preferences.completed_at is set. */
   onboarded: boolean;
 };
@@ -15,7 +19,7 @@ export type Account = {
 export async function loadAccount(authUserId: string): Promise<Account> {
   const { data: profile, error } = await supabase
     .from('profiles')
-    .select('id, display_name, timezone')
+    .select('id, display_name, timezone, bird_seed, bird_color, bird_extra, family_role')
     .eq('auth_user_id', authUserId)
     .maybeSingle();
   if (error) throw error;
@@ -30,6 +34,8 @@ export async function loadAccount(authUserId: string): Promise<Account> {
     profileId: profile.id,
     displayName: profile.display_name,
     timeZone: profile.timezone,
+    bird: { color: profile.bird_color, seed: profile.bird_seed, extra: toExtra(profile.bird_extra) },
+    role: profile.family_role === 'parent' || profile.family_role === 'child' ? profile.family_role : null,
     onboarded: Boolean(prefs?.completed_at),
   };
 }

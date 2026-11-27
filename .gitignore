@@ -34,3 +34,6 @@ coverage/
 # Native folders are generated from app.json (Continuous Native Generation)
 /ios
 /android
+
+# Skia's WebAssembly file for the browser build, copied by `npm run setup:web`
+public/canvaskit.wasm
