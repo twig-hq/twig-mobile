@@ -14,6 +14,7 @@ import { printNumber } from '@/birds';
 import { ToastProvider } from '@/components';
 import { DraftProvider, startingName, type Draft } from '@/onboarding/draft';
 import { addPhrase, MAX_PHRASES } from '@/onboarding/questions';
+import { nearestStop, stopX, twigPath } from '@/onboarding/twig';
 import { SessionContext, type SessionValue } from '@/session';
 
 const metrics = {
@@ -258,16 +259,37 @@ describe('the questions', () => {
     expect(screen.getByRole('radio', { name: 'Caring for family' })).toBeTruthy();
   });
 
-  it('shows an example for each depth, Balanced to start', async () => {
+  it('is one slider for screen readers, Balanced to start, with an example for each depth', async () => {
     await render(
       <Wrap value={session()} initial={answered}>
         <DepthScreen />
       </Wrap>,
     );
-    expect(screen.getByRole('radio', { name: /^Balanced/ })).toBeChecked();
+    const slider = screen.getByRole('adjustable', { name: 'How personal' });
+    expect(slider).toHaveAccessibilityValue({
+      text: 'Balanced. For example: What did a Saturday look like when you were 24?',
+    });
     expect(screen.getByText('“What did a Saturday look like when you were 24?”')).toBeTruthy();
-    await fireEvent.press(screen.getByRole('radio', { name: /^Deep/ }));
+    await fireEvent(slider, 'accessibilityAction', { nativeEvent: { actionName: 'increment' } });
     expect(screen.getByText('“What do you wish you had asked your own parents?”')).toBeTruthy();
+    await fireEvent(slider, 'accessibilityAction', { nativeEvent: { actionName: 'increment' } });
+    // already as deep as it goes
+    expect(screen.getByRole('adjustable', { name: 'How personal' })).toHaveAccessibilityValue({
+      text: 'Deep. For example: What do you wish you had asked your own parents?',
+    });
+    await fireEvent(slider, 'accessibilityAction', { nativeEvent: { actionName: 'decrement' } });
+    await fireEvent(slider, 'accessibilityAction', { nativeEvent: { actionName: 'decrement' } });
+    expect(screen.getByText('“What was the first job you ever had?”')).toBeTruthy();
+  });
+
+  it('moves to a depth when its label is tapped, and skips to the next question', async () => {
+    await render(
+      <Wrap value={session()} initial={answered}>
+        <DepthScreen />
+      </Wrap>,
+    );
+    await fireEvent.press(screen.getByText('Light', { includeHiddenElements: true }));
+    expect(screen.getByText('“What was the first job you ever had?”')).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: 'Skip' }));
     expect(push).toHaveBeenCalledWith('/avoid');
   });
@@ -310,5 +332,19 @@ describe('the questions', () => {
       avoidTopics: [],
       avoidPhrases: [],
     });
+  });
+});
+
+describe('the twig', () => {
+  it('finds the stop nearest a point', () => {
+    expect(nearestStop(0, 300)).toBe(0);
+    expect(nearestStop(140, 300)).toBe(1);
+    expect(nearestStop(300, 300)).toBe(2);
+    expect(stopX(1, 300)).toBe(150);
+  });
+
+  it('dips more under a bird that has landed than one that is lifted', () => {
+    const depth = (d: string) => Number(d.split(' ')[9]);
+    expect(depth(twigPath(300, 150, 3))).toBeGreaterThan(depth(twigPath(300, 150, 1)));
   });
 });
