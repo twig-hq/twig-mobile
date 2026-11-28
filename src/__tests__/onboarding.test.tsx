@@ -4,12 +4,16 @@ import { router } from 'expo-router';
 import type { ReactNode } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import AvoidScreen from '@/app/(onboarding)/avoid';
 import MeetScreen from '@/app/(onboarding)/bird';
+import DepthScreen from '@/app/(onboarding)/depth';
 import NameScreen from '@/app/(onboarding)/index';
+import LifeScreen from '@/app/(onboarding)/life';
 import PrintScreen from '@/app/(onboarding)/print';
 import { printNumber } from '@/birds';
 import { ToastProvider } from '@/components';
 import { DraftProvider, startingName, type Draft } from '@/onboarding/draft';
+import { addPhrase, MAX_PHRASES } from '@/onboarding/questions';
 import { SessionContext, type SessionValue } from '@/session';
 
 const metrics = {
@@ -35,6 +39,7 @@ function session(change: Partial<SessionValue> = {}): SessionValue {
     holdSignedOut: jest.fn(),
     setOnboarded: jest.fn(async () => {}),
     saveProfile: jest.fn(async () => {}),
+    finishOnboarding: jest.fn(async () => {}),
     reloadAccount: jest.fn(),
     signOut: jest.fn(async () => ({ ok: true })),
     ...change,
@@ -186,7 +191,9 @@ describe('step 3: meet your bird', () => {
       role: 'child',
       bird: { seed: 4821, color: 'sage', extra: 'headphones' },
     });
-    expect(value.setOnboarded).toHaveBeenCalledWith(true);
+    // on to the questions; onboarding is not finished yet
+    expect(push).toHaveBeenCalledWith('/life');
+    expect(value.setOnboarded).not.toHaveBeenCalled();
   });
 
   it('keeps the person here, and says so, if saving fails', async () => {
@@ -198,7 +205,7 @@ describe('step 3: meet your bird', () => {
       </Wrap>,
     );
     await fireEvent.press(screen.getByRole('button', { name: "That's me" }));
-    expect(value.setOnboarded).not.toHaveBeenCalled();
+    expect(push).not.toHaveBeenCalled();
     expect(
       screen.getByText("That didn't save. Check your connection and try again.", {
         includeHiddenElements: true,
@@ -208,5 +215,100 @@ describe('step 3: meet your bird', () => {
       jest.runOnlyPendingTimers();
     });
     jest.useRealTimers();
+  });
+});
+
+describe('typed topics', () => {
+  it('tidies a topic and refuses empty ones, repeats and too many', () => {
+    expect(addPhrase([], '  my   job search ')).toEqual(['my job search']);
+    expect(addPhrase(['my ex'], '   ')).toEqual(['my ex']);
+    expect(addPhrase(['My ex'], 'my ex')).toEqual(['My ex']);
+    const full = Array.from({ length: MAX_PHRASES }, (_, i) => `topic ${i}`);
+    expect(addPhrase(full, 'one more')).toEqual(full);
+    expect(addPhrase([], 'x'.repeat(60))[0]).toHaveLength(40);
+  });
+});
+
+describe('the questions', () => {
+  const answered: Partial<Draft> = { name: 'Sam', role: 'child', seed: 4821, color: 'sage', extra: 'none' };
+
+  it('offers a son or daughter their own life stages, one at a time', async () => {
+    await render(
+      <Wrap value={session()} initial={answered}>
+        <LifeScreen />
+      </Wrap>,
+    );
+    expect(screen.getByRole('radio', { name: 'Just graduated' })).toBeTruthy();
+    expect(screen.queryByRole('radio', { name: 'Retired' })).toBeNull();
+    await fireEvent.press(screen.getByRole('radio', { name: 'Working' }));
+    expect(screen.getByRole('radio', { name: 'Working' })).toBeChecked();
+    await fireEvent.press(screen.getByRole('radio', { name: 'Student' }));
+    expect(screen.getByRole('radio', { name: 'Working' })).not.toBeChecked();
+    await fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
+    expect(push).toHaveBeenCalledWith('/depth');
+  });
+
+  it('offers parents theirs', async () => {
+    await render(
+      <Wrap value={session()} initial={{ ...answered, role: 'parent' }}>
+        <LifeScreen />
+      </Wrap>,
+    );
+    expect(screen.getByRole('radio', { name: 'Retired' })).toBeTruthy();
+    expect(screen.getByRole('radio', { name: 'Caring for family' })).toBeTruthy();
+  });
+
+  it('shows an example for each depth, Balanced to start', async () => {
+    await render(
+      <Wrap value={session()} initial={answered}>
+        <DepthScreen />
+      </Wrap>,
+    );
+    expect(screen.getByRole('radio', { name: /^Balanced/ })).toBeChecked();
+    expect(screen.getByText('“What did a Saturday look like when you were 24?”')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('radio', { name: /^Deep/ }));
+    expect(screen.getByText('“What do you wish you had asked your own parents?”')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Skip' }));
+    expect(push).toHaveBeenCalledWith('/avoid');
+  });
+
+  it('saves every answer, picked and typed topics included, and finishes', async () => {
+    const value = session();
+    await render(
+      <Wrap value={value} initial={{ ...answered, lifeStage: 'working', depth: 1 }}>
+        <AvoidScreen />
+      </Wrap>,
+    );
+    await fireEvent.press(screen.getByRole('checkbox', { name: 'Politics' }));
+    await fireEvent.press(screen.getByRole('checkbox', { name: 'Money' }));
+    await fireEvent.changeText(screen.getByLabelText('Or add your own'), 'My job search');
+    await fireEvent.press(screen.getByRole('button', { name: 'Add topic' }));
+    await fireEvent.changeText(screen.getByLabelText('Or add your own'), 'my ex');
+    await fireEvent(screen.getByLabelText('Or add your own'), 'submitEditing');
+    // and take one back
+    await fireEvent.press(screen.getByRole('button', { name: 'my ex, added by you. Remove' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
+    expect(value.finishOnboarding).toHaveBeenCalledWith({
+      lifeStage: 'working',
+      depth: 1,
+      avoidTopics: ['politics', 'money'],
+      avoidPhrases: ['My job search'],
+    });
+  });
+
+  it('skipping the last question still finishes, without topics', async () => {
+    const value = session();
+    await render(
+      <Wrap value={value} initial={{ ...answered, avoidTopics: ['health'] }}>
+        <AvoidScreen />
+      </Wrap>,
+    );
+    await fireEvent.press(screen.getByRole('button', { name: 'Skip' }));
+    expect(value.finishOnboarding).toHaveBeenCalledWith({
+      lifeStage: null,
+      depth: 2,
+      avoidTopics: [],
+      avoidPhrases: [],
+    });
   });
 });

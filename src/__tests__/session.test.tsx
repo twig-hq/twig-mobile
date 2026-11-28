@@ -34,6 +34,7 @@ function session(change: Partial<SessionValue> = {}): SessionValue {
     holdSignedOut: jest.fn(),
     setOnboarded: jest.fn(async () => {}),
     saveProfile: jest.fn(async () => {}),
+  finishOnboarding: jest.fn(async () => {}),
     reloadAccount: jest.fn(),
     signOut: jest.fn(async () => ({ ok: true })),
     ...change,

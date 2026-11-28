@@ -1426,6 +1426,7 @@ export type Database = {
       }
       user_preferences: {
         Row: {
+          avoid_phrases: string[]
           avoid_topics: string[]
           completed_at: string | null
           created_at: string
@@ -1436,6 +1437,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          avoid_phrases?: string[]
           avoid_topics?: string[]
           completed_at?: string | null
           created_at?: string
@@ -1446,6 +1448,7 @@ export type Database = {
           user_id?: string
         }
         Update: {
+          avoid_phrases?: string[]
           avoid_topics?: string[]
           completed_at?: string | null
           created_at?: string

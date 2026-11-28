@@ -71,8 +71,8 @@ export function ChoiceRow({ label, selected, onPress, kind = 'radio' }: Props) {
   );
 }
 
-/** A small pill that turns on and off, for picking several from a wrapping group. */
-export function Chip({ label, selected, onPress }: Omit<Props, 'kind'>) {
+/** A small pill that turns on and off, for picking several from a wrapping group (or, as a radio, one). */
+export function Chip({ label, selected, onPress, kind = 'checkbox' }: Props) {
   const t = useTheme();
   const press = usePressScale();
   const changed = useChanged(selected);
@@ -81,7 +81,7 @@ export function Chip({ label, selected, onPress }: Omit<Props, 'kind'>) {
       <Pressable
         {...press.handlers}
         onPress={onPress}
-        accessibilityRole="checkbox"
+        accessibilityRole={kind}
         accessibilityLabel={label}
         accessibilityState={{ checked: selected }}
         style={({ pressed }) => [

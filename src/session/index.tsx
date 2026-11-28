@@ -9,11 +9,13 @@ import { supabase } from '@/lib/supabase';
 import {
   loadAccount,
   refreshTimeZone,
+  saveAnswers,
   saveProfile,
   setOnboarded,
   type Account,
   type ProfileChanges,
 } from './account';
+import type { Answers } from '@/onboarding/questions';
 
 /**
  * Where the app is allowed to be.
@@ -79,6 +81,8 @@ export type SessionValue = {
   holdSignedOut: (held: boolean) => void;
   /** Saves that onboarding is finished (or, in development, not finished), then moves on. */
   setOnboarded: (done: boolean) => Promise<void>;
+  /** Saves onboarding's answers and finishes onboarding, which opens the app. */
+  finishOnboarding: (answers: Answers) => Promise<void>;
   /** Saves the name, role and bird from onboarding. */
   saveProfile: (changes: ProfileChanges) => Promise<void>;
   /** Tries loading the account again, after an error. */
@@ -224,6 +228,19 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     [account, previewing],
   );
 
+  const finishOnboarding = useCallback(
+    async (answers: Answers) => {
+      if (previewing) {
+        setPretend((a) => (a ? { ...a, onboarded: true } : a));
+        return;
+      }
+      if (!account) return;
+      await saveAnswers(account.profileId, answers);
+      setResult((r) => (r && r.account ? { ...r, account: { ...r.account, onboarded: true } } : r));
+    },
+    [account, previewing],
+  );
+
   const reloadAccount = useCallback(() => setAttempt((n) => n + 1), []);
 
   const signOut = useCallback(async () => {
@@ -250,10 +267,22 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       holdSignedOut: setHeld,
       setOnboarded: markOnboarded,
       saveProfile: saveChanges,
+      finishOnboarding,
       reloadAccount,
       signOut,
     }),
-    [status, session, account, preview, startPreview, markOnboarded, saveChanges, reloadAccount, signOut],
+    [
+      status,
+      session,
+      account,
+      preview,
+      startPreview,
+      markOnboarded,
+      saveChanges,
+      finishOnboarding,
+      reloadAccount,
+      signOut,
+    ],
   );
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }

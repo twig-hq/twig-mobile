@@ -9,7 +9,12 @@ import { useTheme } from '@/theme';
 export const STEPS = 3;
 
 type Props = {
-  step: number;
+  /** The bird steps: "Step 2 of 3" at the top right. */
+  step?: number;
+  /** The questions: a small label above the heading, like "About you · 1 of 3". */
+  eyebrow?: string;
+  /** The questions: a Skip action at the top right. */
+  onSkip?: () => void;
   title: string;
   subtitle?: string;
   /** The buttons at the bottom, which stay in view while the rest scrolls. */
@@ -20,17 +25,24 @@ type Props = {
 };
 
 /** One onboarding screen: back, "Step 2 of 3", a heading, the content and the buttons. */
-export function Step({ step, title, subtitle, footer, children, back = true }: Props) {
+export function Step({ step, eyebrow, onSkip, title, subtitle, footer, children, back = true }: Props) {
   const t = useTheme();
   const insets = useSafeAreaInsets();
   return (
     <View style={[styles.fill, { backgroundColor: t.colors.background }]}>
       <ScreenHeader
         onBack={back ? () => router.back() : undefined}
+        action={
+          onSkip
+            ? { label: 'Skip', onPress: onSkip, accessibilityHint: 'Leaves this question unanswered' }
+            : undefined
+        }
         right={
-          <Text variant="footnote" color="textMuted" style={{ fontFamily: t.text.label.fontFamily }}>
-            Step {step} of {STEPS}
-          </Text>
+          step ? (
+            <Text variant="footnote" color="textMuted" style={{ fontFamily: t.text.label.fontFamily }}>
+              Step {step} of {STEPS}
+            </Text>
+          ) : undefined
         }
       />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.fill}>
@@ -39,6 +51,11 @@ export function Step({ step, title, subtitle, footer, children, back = true }: P
           contentContainerStyle={{ paddingHorizontal: t.gutter, paddingBottom: t.space.xl, gap: t.space.xl }}
         >
           <View style={{ gap: t.space.sm }}>
+            {eyebrow ? (
+              <Text variant="eyebrow" color="textMuted">
+                {eyebrow}
+              </Text>
+            ) : null}
             <Text variant="display" accessibilityRole="header">
               {title}
             </Text>

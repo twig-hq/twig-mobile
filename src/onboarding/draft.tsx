@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
 
 import type { Extra } from '@/birds';
+import { DEFAULT_DEPTH } from '@/onboarding/questions';
 import { useSession } from '@/session';
 
 /** What onboarding has gathered so far. Nothing is saved until "That's me". */
@@ -12,6 +13,12 @@ export type Draft = {
   /** A bird colour by its database name ('gold'); null until chosen. */
   color: string | null;
   extra: Extra;
+  lifeStage: string | null;
+  depth: number;
+  /** Picked topics, as prompt_library tags. */
+  avoidTopics: string[];
+  /** Typed topics. */
+  avoidPhrases: string[];
 };
 
 type DraftValue = { draft: Draft; update: (changes: Partial<Draft>) => void };
@@ -36,6 +43,10 @@ export function DraftProvider({ children, initial }: { children: ReactNode; init
     seed: null,
     color: account?.bird.color ?? null,
     extra: account?.bird.extra ?? 'none',
+    lifeStage: null,
+    depth: DEFAULT_DEPTH,
+    avoidTopics: [],
+    avoidPhrases: [],
     ...initial,
   }));
   const update = useCallback((changes: Partial<Draft>) => setDraft((d) => ({ ...d, ...changes })), []);
