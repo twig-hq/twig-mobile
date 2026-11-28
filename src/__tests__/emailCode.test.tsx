@@ -54,6 +54,7 @@ const session: SessionValue = {
   account: null,
   setOnboarded: jest.fn(async () => {}),
   saveProfile: jest.fn(async () => {}),
+  finishOnboarding: jest.fn(async () => {}),
   reloadAccount: jest.fn(),
   signOut: jest.fn(async () => ({ ok: true })),
 };

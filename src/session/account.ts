@@ -1,5 +1,6 @@
 import { deviceTimeZone } from '@/auth/emailCode';
 import { toExtra, type BirdLook } from '@/birds';
+import type { Answers } from '@/onboarding/questions';
 import { supabase } from '@/lib/supabase';
 
 // What the app needs to know about the signed-in person before it can show
@@ -91,4 +92,24 @@ export async function saveProfile(profileId: string, c: ProfileChanges): Promise
     })
     .eq('id', profileId);
   if (error) throw error;
+}
+
+/** Saves onboarding's answers and marks onboarding finished, in one write. */
+export async function saveAnswers(profileId: string, a: Answers): Promise<void> {
+  const row = {
+    life_stage: a.lifeStage,
+    question_depth: a.depth,
+    avoid_topics: a.avoidTopics,
+    avoid_phrases: a.avoidPhrases,
+    completed_at: new Date().toISOString(),
+  };
+  const { data, error } = await supabase
+    .from('user_preferences')
+    .update(row)
+    .eq('user_id', profileId)
+    .select('user_id');
+  if (error) throw error;
+  if (data.length > 0) return;
+  const { error: insertError } = await supabase.from('user_preferences').insert(row);
+  if (insertError) throw insertError;
 }

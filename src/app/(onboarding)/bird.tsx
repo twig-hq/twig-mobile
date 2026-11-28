@@ -30,7 +30,7 @@ export default function MeetScreen() {
   const toast = useToast();
   const motion = useMotion();
   const { draft, update } = useDraft();
-  const { saveProfile, setOnboarded } = useSession();
+  const { saveProfile } = useSession();
   const [saving, setSaving] = useState(false);
   const [pop] = useState(() => new Animated.Value(motion.reduceMotion ? 1 : 0.6));
 
@@ -55,8 +55,8 @@ export default function MeetScreen() {
         role: draft.role,
         bird: { seed, color: colorName, extra: draft.extra },
       });
-      // moves the app on to Home
-      await setOnboarded(true);
+      setSaving(false);
+      router.push('/life');
     } catch {
       setSaving(false);
       toast.show("That didn't save. Check your connection and try again.", { tone: 'error' });
